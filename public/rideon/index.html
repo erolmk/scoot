@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RideOn</title>
+<meta name="description" content="RideOn: borrow a fellow Trojan's scooter or bike. Round trip, USC-verified, AI-checked. Fight On. Ride On.">
+<meta name="theme-color" content="#990000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23990000'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23FFCC00' font-family='Arial' font-weight='900'%3ER%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="stage">
+  <aside class="pitch">
+    <div class="brand"><span class="logo">R</span><div><b>RideOn</b><small>Fight On. Ride On.</small></div></div>
+    <h1>Borrow a Trojan's ride.</h1>
+    <p>USC students can't charge scooters in the dorms, and scooters left outside get stolen. RideOn gives owners a free smart lock, a GPS tag and a legal place to charge. In return, their scooter or bike earns money while they're in class.</p>
+    <ul>
+      <li><b>Round trip.</b> Pick it up at the owner's rack, bring it back to the same rack.</li>
+      <li><b>Only Trojans.</b> USC NetID login and a driver's license check.</li>
+      <li><b>AI-checked.</b> Photos at pickup and return: battery %, parking, lock and damage.</li>
+    </ul>
+    <p class="hint">This is a live prototype. Tap around the phone. On your own phone, open this page for the full-screen app.</p>
+    <p class="hint small">AI@USC Hackathon 2026 · prototype · demo data</p>
+  </aside>
+  <div class="phone" id="phone">
+    <div class="island"></div>
+    <div class="statusbar"><span id="sb-time">9:41</span><span class="sb-icons"><svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.9a6.5 6.5 0 0 1 9.2 0l-1.1 1.1a5 5 0 0 0-7 0zM1.1 4.6a9.8 9.8 0 0 1 13.8 0l-1.1 1.1a8.2 8.2 0 0 0-11.6 0z"/></svg><span class="batt"><i></i></span></span></div>
+    <div class="screen" id="app"></div>
+    <div class="homebar"></div>
+    <div id="toast" class="toast"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+name = "rideon"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+routes = [
+  { pattern = "seamengine.com/rideon*", zone_name = "seamengine.com" },
+  { pattern = "www.seamengine.com/rideon*", zone_name = "seamengine.com" },
+]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+
+[vars]
+MODEL = "claude-opus-4-7"
