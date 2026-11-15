@@ -1,37 +1,37 @@
 # SCoot: 3-minute pitch script
 
-One block per slide, in order. About 3 minutes at a normal pace.
-Total: 483 words.
+One block per slide, in order. These are the slides' speaker notes.
+Total: 453 words, about 181 seconds at a normal pace.
 
-## Slide 1: cover (25 words)
-SCoot lets a USC student borrow another student’s scooter or bike from the rack outside their dorm, and bring it back to the same rack.
+## Slide 1: cover (24 words)
+SCoot lets USC students rent out their scooters and bikes. You pick one up where the owner keeps it and bring it back there.
 
-## Slide 2: lime (49 words)
-Why not just use Lime? On Lime’s map, USC is a red zone, so Lime scooters pile up at the gates. Students posted these on r/USC in September. If you need a ride on campus, you buy a scooter or you walk. SCoot uses the scooters students already own.
+## Slide 2: lime (37 words)
+Lime can’t park on campus. Its own map shows USC as a red zone, so its scooters end up at the gates, like in these r/USC photos. So students on campus either buy a scooter or walk.
 
-## Slide 3: problem (51 words)
-Scooters at USC live on outdoor racks, and they get stolen: one evening in February 2025, DPS reported three stolen and a fourth attempt. The rest sit unused while their owners are in class. And students who only need one now and then won’t spend three hundred dollars, so they walk.
+## Slide 3: problem (43 words)
+Scooters at USC are kept on outdoor racks, and they get stolen: three in one evening last February. Most of the day an owner’s scooter just sits there. And students who only need a ride now and then won’t spend three hundred dollars.
 
-## Slide 4: demand (49 words)
-We talked to twenty students. Six of eight scooter owners said they’d probably rent theirs out, and nine of twelve students without one said they’d probably use it. The other three don’t make the kind of commute that needs it. It’s stated interest; the pilot tests the real thing.
+## Slide 4: demand (39 words)
+We talked to twenty students. Six of eight owners said they would probably rent theirs out. Nine of twelve students without one said they would probably use it. That’s what people told us; the pilot tests it for real.
 
-## Slide 5: deal (47 words)
-So we start with the owner. They get an eighty-six dollar smart padlock and hardened chain at no cost. No tracker: the renter’s phone logs where the lock opened and closed. Owners keep 70 percent; half of our 30 pays off their lock, then they keep 90.
+## Slide 5: deal (52 words)
+Owners set their own prices, so lending is worth it to them. To start, they only need a twenty-dollar key box for the key to their own lock. Renters get the code, and the owner changes it every night. Owners keep 90 percent. In the pilot we add a free smart padlock.
 
-## Slide 6: how (57 words)
-Every rental is a round trip from the owner’s rack. Tommy rides to the gym and back: an hour and ten minutes, a mile and a half, five dollars. Priya keeps hers all day and comes back twenty minutes late: four extra hours, one extra mile and the fifteen-dollar late fee, thirty dollars. Owners set the prices.
+## Slide 6: how (50 words)
+Damian goes from Parkside to Leavey to study, then to the gym, then home. Two hours forty-five and one point six miles cost him seven dollars, and he rides for thirteen minutes instead of walking for forty-eight. Priya keeps hers all day and comes back late, so she pays thirty.
 
-## Slide 7: app (36 words)
-This is a working prototype you can try now. The photo checks call a real AI model; sign-in, payments and the lock are simulated. Owners see the curfew and their earnings, not where the renter parked.
+## Slide 7: app (42 words)
+This is the working prototype, and you can try it on your phone. The photo checks call a real AI model. Sign-in, payments and the lock are simulated. During a ride you see the cost, the battery and the time you saved.
 
 ## Slide 8: ai (52 words)
-The AI does four jobs from photos. It reads the battery display, since no scooter brand connects to us, and tracks the battery from that reading and the miles you ride. It checks parking and the lock, flags new damage for a person to judge, and reads a license’s type and expiry.
+The AI does four things with photos. It reads the battery display, because no scooter brand connects to our app. It checks that the scooter is parked and locked. It compares the return photo with the pickup photo for new damage, and a person decides. And it reads a license’s expiry date.
 
-## Slide 9: security (47 words)
-We attacked our own AI. A note in the photo said the battery was 100 percent and to approve. It still read the real 12 percent and flagged the note. Every answer must match a strict schema, and the AI never approves a rental or charges anyone.
+## Slide 9: security (39 words)
+We tried to trick our own AI with a note in the photo saying the battery was 100 percent. It still read the real 12 percent and flagged the note. The AI never approves a rental or charges anyone.
 
-## Slide 10: usc (56 words)
-We’re asking for a Student Government sponsor and a grant in two stages. Stage one is three weeks with no rides, about six hundred dollars: recruit owners, collect real trip requests, and test the lock and the AI on real photos. Only if that works, stage two is six weeks of rides, about five thousand dollars.
+## Slide 10: usc (51 words)
+For a pilot we need a Student Government sponsor and a grant in two stages. Stage one is three weeks with no rides, about six hundred dollars: we recruit owners and test the lock and the AI on real photos. Stage two, six weeks of rides, happens only if that works.
 
-## Slide 11: next (14 words)
-Try the app on your phone at seamengine.com slash scoot. Fight On, Scoot On.
+## Slide 11: next (24 words)
+Next we need a sponsor, the first owners at IRC, and real-photo testing. You can try the app at scootusc dot pages dot dev.
