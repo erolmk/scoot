@@ -73,6 +73,9 @@ function validate(kind, r) {
   if (kind === 'battery') {
     if (r.percent != null && (r.percent < 0 || r.percent > 100)) r.percent = null, r.status = 'unknown';
     if (r.bars_total != null && (r.bars_total <= 0 || r.bars_lit < 0 || r.bars_lit > r.bars_total)) r.bars_lit = r.bars_total = null;
+    // Cross-check with the model's own transcription: a visible "NN%" means the display shows a percentage.
+    const m = /(^|[^\d])(\d{1,3})\s*%/.exec(r.visible_text || '');
+    if (m && +m[2] <= 100 && r.quality_problem === 'none' && !r.instruction_text_seen) { r.display_kind = 'percent'; r.percent = +m[2]; r.status = 'readable'; }
     if (r.display_kind !== 'percent' || r.quality_problem !== 'none') { if (r.status === 'readable' && r.display_kind !== 'percent') r.percent = null; }
   }
   if (kind === 'license') {
@@ -159,7 +162,7 @@ async function viaWorkersAI(kind, task, parts, env) {
   const model = '@cf/meta/llama-4-scout-17b-16e-instruct';
   try {
     const out = await env.AI.run(model, {
-      messages: [{ role: 'system', content: SYS + ' Reply with JSON only, matching this schema: ' + JSON.stringify(task.schema) }, { role: 'user', content: parts }],
+      messages: [{ role: 'system', content: SYS + ' If the display shows a number with a % sign, display_kind is "percent", percent is that number, and visible_text is exactly what the display shows. Reply with JSON only, matching this schema: ' + JSON.stringify(task.schema) }, { role: 'user', content: parts }],
       response_format: { type: 'json_schema', json_schema: task.schema }, max_tokens: 800,
     });
     const res = typeof out?.response === 'string' ? JSON.parse(out.response.replace(/^[^{]*/, '').replace(/[^}]*$/, '')) : out?.response;

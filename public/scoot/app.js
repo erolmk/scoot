@@ -35,7 +35,7 @@ function bill(b, endTs) {
 // Battery estimate: the last AI photo reading minus miles ridden x this scooter's drain per mile.
 // Drain starts at 100% / full-charge range and is re-learned from the before/after photos of every ride.
 const drainOf = v => v.drain || 100 / RANGE[v.range].full;
-const estBatt = (b, v) => Math.max(0, Math.round(b.pickupBattery - rideMiles(b) * drainOf(v)));
+const estBatt = (b, v) => Math.max(0, Math.round((b.pickupBattery ?? v.battery ?? 0) - rideMiles(b) * drainOf(v)));
 const HOLD = { e: 25, bike: 10 };
 // The 30% SCoot keeps: half pays off the owner's $86 lock kit, half covers card fees + the safety fund.
 // Once the kit is paid off, the owner keeps 85%.
