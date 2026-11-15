@@ -3,7 +3,7 @@
 **Borrow a fellow Trojan's scooter or bike. Round trip, USC-verified, AI-checked.**
 Built at AI@USC 2026 (HackSC × USC AI Committee × USC Student Government).
 
-Live prototype: **https://seamengine.com/scoot/** · Pitch deck: **https://seamengine.com/scoot/SCoot_deck.pdf**
+Live prototype: **https://seamengine.com/scoot/** (also **https://scootusc.pages.dev/**; Damian's tap-through day: **https://scootusc.pages.dev/damian**) · Pitch deck: **https://seamengine.com/scoot/SCoot_deck.pdf**
 
 ## The problem
 - Scooters left on campus racks get stolen. One evening (Feb 5 2025) USC DPS reported three e-scooters stolen from campus racks and a fourth attempt, with cut cable locks left behind (https://dps.usc.edu/2025/02/07/motor-vehicle-theft-2/).
@@ -15,7 +15,8 @@ Live prototype: **https://seamengine.com/scoot/** · Pitch deck: **https://seame
 Owners get a smart lock at no cost to them; part of SCoot's cut pays it off. In return, their scooter or bike can be borrowed by other verified students while it would otherwise sit idle.
 
 - **Round trip.** Pick it up at the owner's rack, bring it back to the same rack. No rebalancing problem.
-- **Owners set the price.** A start price covers the first 2 hours and 2 miles (the shortest rental), then a price for each started extra hour plus each started extra mile. At $5 / $2 / $2, Parkside to the Village gym and back (about 1.4 mi, 1½ h) is $5, and a 4-hour lecture plus travel (about 4 h 20 min, under 2 mi) is $11. Missing the owner's curfew costs $15. The owner keeps 70%. Of SCoot's 30%, half pays off the owner's $86 lock kit and half covers card fees and a safety fund; once the lock is paid off, the owner keeps 90%.
+- **Owners set the price.** A start price covers the first 2 hours and 2 miles (the shortest rental), then a price for each started extra hour plus each started extra mile. At $5 / $2 / $2, Parkside to the Village gym and back (about 1.4 mi, 1½ h) is $5, and a 4-hour lecture plus travel (about 4 h 20 min, under 2 mi) is $11. Missing the owner's curfew costs $15. The owner keeps 70%. Of SCoot's 30%, half pays off the owner's $86 lock kit and half covers card fees and a safety fund; once the lock is paid off, the owner keeps 90%. Ordinary bikes are priced by time only; e-bikes keep the mile price.
+- **Day-one option: a key box.** Before the smart padlocks, an owner can use a ~$20 key box for the key to their own lock. Renters get the code after their pickup photos; the owner changes it every night and keeps 90% from the first ride.
 - **Battery estimate.** The AI reads the battery from a photo at pickup; during the ride the app subtracts the miles ridden times that scooter's drain per mile, and re-learns the drain from each ride's before and after photos. If it dies anyway, the renter kicks it home without the motor, or walks it if riding isn't safe.
 - **Only Trojans.** USC NetID sign-in, plus a license check for e-scooters (CA Vehicle Code 21235).
 - **Cheap lock, no tracker.** A $48 TTLock smart padlock plus a $38 hardened chain. The renter's phone logs location at every unlock and lock (the ride log), so the lock needs no GPS and there's no monthly fee.

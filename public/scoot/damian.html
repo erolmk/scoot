@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SCoot · Damian's day</title>
+<meta name="description" content="SCoot demo: Damian rents a scooter from his dorm rack for a library-and-gym afternoon, then lists his own.">
+<meta name="theme-color" content="#990000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23990000'/%3E%3Ctext x='32' y='44' font-size='26' text-anchor='middle' fill='%23FFCC00' font-family='Arial' font-weight='900'%3ESC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .stage.dmstage{grid-template-columns:minmax(0,1000px) auto;gap:32px}
+  .dm{position:sticky;top:16px;margin:16px 0;max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:22px;box-shadow:0 24px 60px -30px #4a1a1a55;padding:16px 18px}
+  .dm-head{display:flex;align-items:center;gap:12px}
+  .dm-head .logo{flex:none;width:40px;height:40px;font-size:17px}
+  .dm-head b{font-size:19px;letter-spacing:-.4px;display:block}
+  .dm-head small{color:var(--ink2);font-size:13px}
+  .dm-head small b{font-size:13px;display:inline;letter-spacing:0}
+  .dm-tabs{display:flex;gap:6px;margin-left:auto;flex:none}
+  .dm-tabs button{padding:8px 12px;border-radius:11px;background:#f3ece7;font-weight:800;font-size:13px}
+  .dm-tabs button.on{background:var(--ink);color:#fff}
+  .dm-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start;margin-top:12px}
+  #dm-map{height:300px;border-radius:14px;overflow:hidden;background:#efe6df}
+  .dm-pin{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#fff;background:var(--cardinal);border:3px solid #fff;box-shadow:0 4px 10px #0004}
+  .dm-pin.home{background:var(--gold);color:var(--ink)}
+  .dm-list{list-style:none;margin:0;padding:0}
+  .dm-list li{display:grid;grid-template-columns:76px 1fr;gap:8px;padding:6px 9px;border-radius:11px;font-size:13.5px;line-height:1.38;color:var(--ink2)}
+  .dm-list li.now{background:#fff6cc;box-shadow:inset 3px 0 0 var(--gold-d)}
+  .dm-list .tm{font-weight:900;color:var(--ink);font-size:13px;white-space:nowrap}
+  .dm-list .tm small{display:block;font-weight:600;color:var(--mute);font-size:11.5px}
+  .dm-list b{color:var(--ink)}
+  .dm-list .dist{font-size:12.5px;font-weight:700;color:var(--cardinal);margin-right:6px}
+  .dm-skip{display:inline-flex;align-items:center;gap:5px;margin:2px 0;padding:4px 10px;border-radius:9px;background:var(--ink);color:var(--gold);font-weight:800;font-size:12.5px;vertical-align:middle}
+  .dm-skip:disabled{opacity:.35;cursor:default}
+  .dm-total{margin-top:10px;padding:10px 12px;border-radius:12px;background:#16110f;color:#fff;font-size:13.5px;line-height:1.42}
+  .dm-total b{color:var(--gold)}
+  .dm-total.done{box-shadow:0 0 0 3px var(--gold)}
+  .dm-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .dm-foot button{padding:6px 10px;border-radius:9px;background:#f3ece7;font-weight:700;font-size:12.5px}
+  @media (max-width:1100px){.stage.dmstage{grid-template-columns:minmax(0,1000px)}.dm{position:static;max-height:none}.dm-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="stage dmstage">
+  <main class="dm" aria-label="Damian's day">
+    <div class="dm-head"><span class="logo">SC</span><div><b>Damian’s day with SCoot</b><small>Lives at IRC Parkside · Parkside → <b>Leavey Library</b> (study 1 h) → <b>Lyon Center</b> (gym 1½ h) → Parkside</small></div>
+      <div class="dm-tabs" role="tablist"><button id="tab-rent" class="on" role="tab" onclick="dm.tab('rent')">1 · Renting</button><button id="tab-lend" role="tab" onclick="dm.tab('lend')">2 · Lending his own</button></div></div>
+    <div class="dm-grid">
+      <div><div id="dm-map"></div>
+        <div class="dm-total" id="dm-total">One rental, about 2 h 45 min and 1.6 miles: <b>$5</b> start + <b>$2</b> for 1 extra hour = <b>$7</b>. No mile charge (under 2 miles). About 13 min of riding instead of 31 min of walking. Ethan keeps 90% ($6.30) because his scooter uses a key box; the other 10% covers card fees and the safety fund. Bikes are time only: no mile price.</div>
+        <div class="dm-foot"><button onclick="dm.start(false)">↺ Start over (signed out)</button><button onclick="dm.start(true)">↺ Start over (signed in)</button></div></div>
+      <div>
+      <ol class="dm-list" id="part-rent" data-part="rent">
+        <li><span class="tm">1:00 PM<small>his room</small></span><span>Signs in with his NetID, uses the sample license, taps <b>I agree</b>. Books <b>Trojan Express</b>, Ethan’s scooter at the Parkside rack: $5 for 2 hours + 2 miles, then $2 an hour and $2 a mile. Curfew 6:00 PM ($15 if he’s late).</span></li>
+        <li><span class="tm">1:02<small>IRC rack</small></span><span>Scans the rack sticker. Battery photo: the AI reads <b>79%</b>. A “before” photo. The app shows the key box code <b>4819</b>: he takes Ethan’s key and taps <b>Start ride</b>.</span></li>
+        <li><span class="tm">1:03–1:08<small>riding</small></span><span>Rides to <b>Leavey Library</b>. <span class="dist">0.6 mi · ~5 min (12 min walking)</span><button class="dm-skip" data-skip="13:08,5,Riding to Leavey Library">⏩ Ride 5 min</button><br>Then <b>Lock at a rack</b> → Leavey Library → photo of it locked.</span></li>
+        <li><span class="tm">1:08–2:08<small>Leavey</small></span><span>Studies for an hour. The scooter waits, locked; only he has the key. <button class="dm-skip" data-skip="14:08,60,Studying at Leavey for an hour">⏩ Study 1 hour</button></span></li>
+        <li><span class="tm">2:08–2:12<small>riding</small></span><span><b>Unlock &amp; ride</b> to the <b>Lyon Center</b> gym. <span class="dist">0.5 mi · ~4 min (9 min walking)</span><button class="dm-skip" data-skip="14:12,4,Riding to the Lyon Center">⏩ Ride 4 min</button><br>Then <b>Lock at a rack</b> → Lyon Center → photo.</span></li>
+        <li><span class="tm">2:12–3:42<small>Lyon Center</small></span><span>Works out for an hour and a half. <button class="dm-skip" data-skip="15:42,90,Working out at the Lyon Center">⏩ Gym 1½ hours</button></span></li>
+        <li><span class="tm">3:42–3:46<small>riding home</small></span><span><b>Unlock &amp; ride</b> home. <span class="dist">0.5 mi · ~4 min (10 min walking)</span><button class="dm-skip" data-skip="15:46,4,Riding home to Parkside">⏩ Ride 4 min</button><br><b>Return to IRC Parkside</b>: scan the sticker, battery photo, one photo of it locked, key back in the box, <b>End rental</b>.</span></li>
+      </ol>
+      <ol class="dm-list" id="part-lend" data-part="lend" hidden>
+        <li><span class="tm">Garage<small>in the app</small></span><span>Taps <b>Garage</b> → <b>Choose a lock</b> → <b>Key box · start today</b>. A $20 code box holds the key to his own lock. Renters get the code after their photos and put the key back at the end. He can start lending today.</span></li>
+        <li><span class="tm">Prices<small>he decides</small></span><span>Sets his own prices, so lending is worth it to him, and the days and hours it’s rentable. Turns on <b>Rent it out</b> and leaves it chained at the Parkside rack.</span></li>
+        <li><span class="tm">Booked<small>he’s in class</small></span><span>A student books it. He sees who has it and when it’s due back, never where they park. <button class="dm-skip" id="dm-book">📲 A student books it</button></span></li>
+        <li><span class="tm">Back<small>70 min later</small></span><span>It comes back to the same rack: <b>+$4.50</b>, 90% of $5, because there’s no SCoot lock to pay off. <button class="dm-skip" id="dm-back">⏩ 1 h 10 min later</button></span></li>
+        <li><span class="tm">10 PM<small>that night</small></span><span>He brings it in to charge, types a <b>new key box code</b> in the Garage (past renters know the old one) and pauses rentals. <b>Wallet</b> → Cash out. <button class="dm-skip" data-skip="22:00,1,That night">⏩ To 10 PM</button></span></li>
+      </ol>
+      </div>
+    </div>
+  </main>
+  <div class="phonewrap" id="phonewrap">
+  <div class="phone" id="phone">
+    <div class="island"></div>
+    <div class="statusbar"><span id="sb-time">9:41</span><span class="sb-icons"><svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.9a6.5 6.5 0 0 1 9.2 0l-1.1 1.1a5 5 0 0 0-7 0zM1.1 4.6a9.8 9.8 0 0 1 13.8 0l-1.1 1.1a8.2 8.2 0 0 0-11.6 0z"/></svg><span class="batt"><i></i></span></span></div>
+    <div class="screen" id="app"></div>
+    <div class="homebar"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+  <div class="pl-bar" id="plbar" aria-live="polite"><button id="pl-pause" onclick="Demo.pause()">❚❚</button><span id="pl-say"></span><button id="pl-stop" onclick="Demo.stop()" aria-label="Stop">■</button></div>
+  </div>
+</div>
+<script>window.DEMO_NETID = 'damian';</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+<script src="player.js"></script>
+<script>
+// Damian's page: the box on the left lays out his day; its buttons only move the clock (with the clock animation) or
+// stand in for another student. Everything else is tapped in the phone, using the real app and real AI checks.
+const dm = (() => {
+  const atToday = (h, m) => { const d = new Date(now()); d.setHours(h, m, 0, 0); return d.getTime(); };
+  function start(signedIn) {
+    Demo.stop(); closeModal(); const d = new Date(); d.setHours(13, 0, 0, 0); S.skew = d - Date.now(); S = seed(); S.seededAt = Date.now(); S.page = 'damian';
+    S.vehicles.find(v => v.id === 'v11').until = atToday(18, 0);   // Ethan's curfew is exactly 6:00 PM
+    Object.assign(S.mine, { name: 'Traveler', listed: false, rental: null, lock: 'none', code: '', week: [0, 0, 0, 0, 0, 0, 0], history: [], balance: 0, kitPaid: 0 });
+    S.wallet = [];
+    if (signedIn) { S.user = { netid: 'damian', name: 'Damian', dorm: 'IRC' }; S.lastNetid = 'damian'; S.agreed = true; S.license = { kind: 'Driver license', exp: '2029-08-14', at: now() }; }
+    save(); tab('rent'); if (location.hash === (signedIn ? '#/home' : '#/welcome')) render(); else location.hash = signedIn ? '#/home' : '#/welcome';
+  }
+  function tab(k) {
+    document.getElementById('part-rent').hidden = k !== 'rent'; document.getElementById('part-lend').hidden = k !== 'lend';
+    document.getElementById('tab-rent').classList.toggle('on', k === 'rent'); document.getElementById('tab-lend').classList.toggle('on', k === 'lend');
+    last = '';
+  }
+  // Skip to a time of day (or at least `min` minutes, if the real clock already passed it) with the clock animation.
+  async function skip(spec) {
+    const [hm, min, caption] = spec.split(','), [h, m] = hm.split(':').map(Number);
+    const left = Math.round((atToday(h, m) - now()) / 60000);
+    await Demo.skip(Math.max(left, +min), caption);
+  }
+  // Highlight where Damian is in his day, read from the app's own state.
+  function where() {
+    const b = S.booking, tr = S.trips[0];
+    if (!b) return tr ? 7 : S.user && S.agreed ? 0 : 0;
+    if (b.phase === 'booked') return 1;
+    if (b.phase === 'returning') return 6;
+    if (b.phase === 'parked') return b.at === 'LEAVEY' ? 3 : b.at === 'LYON' ? 5 : 2;
+    return b.at === 'LEAVEY' ? 4 : b.at === 'LYON' ? 6 : 2;
+  }
+  function whereLend() {
+    const m = S.mine, night = now() >= atToday(21, 30);
+    if (night || (m.history.length && !m.listed)) return 4;
+    if (m.history.length) return 3;
+    if (m.rental) return 2;
+    return m.lock === 'none' ? 0 : 1;
+  }
+  function paint() {
+    const rent = document.querySelectorAll('[data-part="rent"] > li'), lend = document.querySelectorAll('[data-part="lend"] > li'), i = where(), j = whereLend();
+    rent.forEach((li, k) => li.classList.toggle('now', k === i)); document.getElementById('dm-total').classList.toggle('done', i === 7);
+    lend.forEach((li, k) => li.classList.toggle('now', k === j));
+    // keep the current step on screen if the box has to scroll
+    const cur = document.querySelector('.dm-list:not([hidden]) li.now'), key = cur ? cur.textContent.slice(0, 16) : '';
+    if (cur && key !== last) { last = key; const box = document.querySelector('.dm'), r = cur.getBoundingClientRect(), br = box.getBoundingClientRect(); if (r.top < br.top || r.bottom > br.bottom) box.scrollBy({ top: r.top - br.top - 60, behavior: 'smooth' }); }
+    document.getElementById('dm-book').disabled = !S.mine.listed || !!S.mine.rental;
+    document.getElementById('dm-back').disabled = !S.mine.rental;
+  }
+  let map = null, last = '';
+  function drawMap() {
+    const P = { IRC: rack('IRC'), LEAVEY: rack('LEAVEY'), LYON: rack('LYON') };
+    map = L.map('dm-map', { zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map); map.attributionControl.setPrefix(false);
+    const pts = [P.IRC, P.LEAVEY, P.LYON, P.IRC].map(r => [r.lat, r.lng]);
+    L.polyline(pts, { color: '#990000', weight: 4, dashArray: '8 8' }).addTo(map);
+    [['IRC', '★', 'home', 'Parkside: start and finish'], ['LEAVEY', '1', '', 'Leavey · study 1 h'], ['LYON', '2', '', 'Lyon Center · gym 1½ h']].forEach(([id, n, c, label]) => {
+      L.marker([P[id].lat, P[id].lng], { icon: L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 14], html: `<div class="dm-pin ${c}">${n}</div>` }) }).addTo(map)
+        .bindTooltip(label, { permanent: true, direction: id === 'LYON' ? 'top' : 'bottom', offset: [0, id === 'LYON' ? -14 : 14] });
+    });
+    map.fitBounds(pts, { padding: [34, 34] });
+  }
+  document.querySelectorAll('.dm-skip[data-skip]').forEach(btn => btn.onclick = () => skip(btn.dataset.skip));
+  document.getElementById('dm-book').onclick = () => {
+    const m = S.mine; if (!m.listed || m.rental) return;
+    m.rental = { renter: 'Ava R.', renterDorm: 'IRC', start: now(), end: Math.max(now() + HOUR, Math.min(now() + 4 * HOUR, atToday(...m.to.split(':').map(Number)))), earn: split(m, rateOf(m).base).owner, at: 'IRC', state: 'riding' };
+    save(); if (location.hash === '#/garage') render(); else go('#/garage'); toast('Ava R. booked ' + m.name);
+  };
+  document.getElementById('dm-back').onclick = async () => { if (!S.mine.rental) return; if (await Demo.skip(70, 'Ava rides to class and back')) A.ownerReturn(); };
+  A.reset = () => { if (confirm('Start Damian’s day over?')) start(false); };   // the app's own Reset would drop Damian's setup
+  addEventListener('hashchange', () => { const h = location.hash; if (/^#\/(garage|wallet)/.test(h)) tab('lend'); else if (/^#\/(pickup|ride|park|return|receipt|v\/)/.test(h)) tab('rent'); });
+  if (S.page !== 'damian') start(false);
+  drawMap(); setInterval(paint, 400); paint();
+  return { start, tab };
+})();
+</script>
+</body>
+</html>

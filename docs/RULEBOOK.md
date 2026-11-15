@@ -5,6 +5,8 @@
 > - Dead battery: the renter kicks it home without the motor, or walks it if riding isn't safe. One report moves the curfew 30 minutes.
 > - Money: owner 70% of the fare. SCoot's 30% is split equally: 15% of the fare toward the owner's $86 lock kit, 15% toward card fees and the safety fund. After the kit is paid off, the owner keeps 90%.
 > - Lock kit: TTLock smart padlock ($48) + ABUS hardened chain ($38), no GPS tracker, no monthly fee. The renter's phone logs location at every unlock and lock. Owners charge their own scooters; there are no charging stations.
+> - Ordinary bikes are time only (no mile price, no mile counter); e-bikes keep miles because of the battery. (Nov 15)
+> - Launch lock before smart padlocks: an owner-bought ~$20 key box holding the key to the owner's own lock; code shown after the pickup photos, changed by the owner every night. Key-box owners keep 90% from the first ride (no kit to pay off). Known limit: past renters know the code until the nightly change. (Nov 15)
 > - See docs/COSTS.md for the current pilot budget.
 
 # SCoot Rulebook
@@ -32,8 +34,9 @@ Name and trademark availability are **UNSURE**. Do not use USC’s seal, athleti
 | Product | Round-trip reservations of scooters and bicycles only |
 | Initial live-pilot inventory | Five vehicles: three electric scooters and two ordinary bicycles |
 | E-bikes | Supported in the design, deferred from initial live inventory |
-| Prices | Owner-set: a start price covers the first 2 hours and 2 miles (usually **$5**), then each started extra hour and each started extra mile (usually **$2** each). One-time **$10** if the owner's curfew is missed |
+| Prices | Owner-set, so lending is worth it to owners: a start price covers the first 2 hours and 2 miles (usually **$5**), then each started extra hour and each started extra mile (usually **$2** each). **Ordinary bicycles are time only**: no mile price, no mile counter. One-time **$15** if the owner's curfew is missed |
 | Other products | No overnight rentals |
+| Launch lock (before smart padlocks) | Owner-bought combination **key box (about $20)** holding the key to the owner's own lock. The renter gets the code after the pickup photos, keeps the key during the ride, and returns it to the box at the end. The owner changes the code every night when the vehicle comes in to charge, and keeps the box out of sight. Owner keeps **90%** (no SCoot lock to pay off). Known limit: a past renter knows the code until that night's change |
 | Owner share | **70%** of the fare. SCoot's 30% is split equally: 15% of the fare toward the owner's $86 lock kit, 15% toward card fees and the safety fund. After the kit is paid off, the owner keeps **90%** |
 | Temporary card authorization | **$25 electric; $10 ordinary bicycle**, separately disclosed from fare |
 | Normal authorization release | Operator requests release within **15 minutes after accepted custody**; bank processing can take longer |

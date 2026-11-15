@@ -1,0 +1,11 @@
+# Second address for the same app, off seamengine.com: https://scootusc.pages.dev (Cloudflare Pages, advanced mode).
+# deploy.sh copies public/scoot/* into ./dist and worker.js in as _worker.js, so the AI checks run here too.
+name = "scootusc"
+pages_build_output_dir = "./dist"
+compatibility_date = "2025-09-01"
+
+[ai]
+binding = "AI"
+
+[vars]
+MODEL = "claude-opus-4-7"

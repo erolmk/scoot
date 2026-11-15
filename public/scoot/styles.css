@@ -298,3 +298,7 @@ input,select{font:inherit}
 #mm .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6)}
 
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+/* key box code on the pickup screen */
+.codebox{display:flex;gap:10px;justify-content:center;margin:12px auto 16px}
+.codebox span{width:56px;height:72px;border-radius:14px;background:#16110f;color:var(--gold);font-size:40px;font-weight:900;display:grid;place-items:center;box-shadow:0 10px 24px -12px #000}
+.pl-cursor.slow{transition:transform 2.1s cubic-bezier(.3,.7,.2,1),opacity .4s}

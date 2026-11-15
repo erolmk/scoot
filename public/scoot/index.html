@@ -29,7 +29,7 @@
             <li><b>12:30</b> Books Maya’s scooter in the app. He has 10 minutes to reach the IRC rack.</li>
             <li><b>12:35</b> Photographs the battery (the AI reads 84%) and the whole scooter. His phone opens the padlock.</li>
             <li><b>12:40</b> Rides 0.7 miles to the Village gym. Chains it to the rack there and takes a photo.</li>
-            <li><b>1:45</b> Rides back and chains it to the IRC rack. One photo of it locked, and the rental ends.</li>
+            <li><b>1:45</b> Rides back and chains it to the IRC rack. A battery photo and one photo of it locked, and the rental ends.</li>
           </ol>
           <p class="lp-total">1 h 10 min, 1.4 miles: <b>$5</b></p>
           <button class="lp-play" data-story="tommy" onclick="Demo.play('tommy')">▶ Play Tommy’s ride</button>
@@ -48,6 +48,7 @@
           <button class="lp-play" data-story="priya" onclick="Demo.play('priya')">▶ Play Priya’s day</button>
         </div>
       </div>
+      <p class="lp-who" style="margin-top:12px">Tommy and Priya are shown with the pilot’s smart padlock. Day-one rides use a key box instead: see <a href="damian">Damian’s day</a>.</p>
     </section>
 
     <section>
@@ -60,20 +61,22 @@
           <li>She leaves it chained at the IRC rack and walks to class. When Tommy books it, the app shows her who has it and when it’s due back. She never sees where he parks.</li>
           <li>Tommy’s $5 ride pays her $3.50. $0.75 goes toward her lock, and $0.75 covers card fees and a safety fund. This week: 4 rentals, $19.60, which she cashes out.</li>
           <li>At night she pauses rentals, opens the padlock with her own key and charges the scooter inside.</li>
-          <li>After about 100 rentals the lock is paid off and she keeps 90% instead of 70%. If she quits before that, the lock goes back to SCoot.</li>
+          <li>After about 115 rentals at $5 the lock is paid off and she keeps 90% instead of 70%. If she quits before that, the lock goes back to SCoot.</li>
         </ol>
+        <p class="lp-who" style="margin-top:10px">Owners who want to start before the smart padlocks arrive can use a $20 key box instead: it holds the key to their own lock, renters get the code, and the owner changes it every night. They keep 90% from the first ride.</p>
         <button class="lp-play" data-story="maya" onclick="Demo.play('maya')">▶ Play Maya’s day as an owner</button>
       </div>
     </section>
 
     <section>
       <h2>Prices</h2>
-      <p>Each owner sets three prices. Most charge these:</p>
+      <p>Each owner sets their own prices, so lending is worth it to them. Most charge these:</p>
       <table class="lp-price">
         <tr><td>Start: the first 2 hours and 2 miles</td><td>$5</td></tr>
         <tr><td>Each extra hour (rounded up)</td><td>$2</td></tr>
         <tr><td>Each extra mile (rounded up)</td><td>$2</td></tr>
         <tr><td>Back after the curfew</td><td>$15, once</td></tr>
+        <tr><td>Regular bikes</td><td>Time only, no mile charge</td></tr>
       </table>
       <p>Miles come from the renter’s phone GPS and count only while the scooter is unlocked. Electric rides also need a $25 card hold, released after the return. <button class="lp-show" onclick="demoJump('#/v/v1')">See a price page</button></p>
     </section>
@@ -82,11 +85,11 @@
       <h2>Common questions</h2>
       <dl class="lp-qa">
         <dt>Why bring it back to the same rack?</dt><dd>So the scooter is always where its owner left it. Nobody has to go find it.</dd>
-        <dt>How does the lock open?</dt><dd>Over Bluetooth from the renter’s phone. The key works until the rental ends, even if they’re late. The chain and padlock always stay with the scooter.</dd>
+        <dt>How does the lock open?</dt><dd>At launch, with a key box: a small code box on the scooter holds the owner’s key. The renter gets the code after the pickup photos, keeps the key during the ride and puts it back at the end. The owner changes the code every night when the scooter comes in to charge. With the pilot comes a smart padlock that opens over Bluetooth from the renter’s phone, until the rental ends.</dd>
         <dt>What if the phone dies or the lock won’t open?</dt><dd>Support opens it or sends someone. Reporting it stops extra-time and curfew fees.</dd>
         <dt>How does the app know the battery?</dt><dd>The AI reads it from the pickup photo. During the ride the app subtracts miles ridden times that scooter’s drain per mile, and the return photo corrects it. Scooters below 40–60% can’t be booked.</dd>
         <dt>Damage?</dt><dd>If the AI flags new damage, a person compares the before and after photos and decides. If it’s confirmed, the renter pays for the repair, starting with the $25 hold. The scooter stays off the app until it’s checked.</dd>
-        <dt>Theft or a crash?</dt><dd>The renter reports it in the app; for theft they also call DPS. If the scooter was locked properly, the renter owes nothing and the safety fund pays the owner (backed by insurance before any real rides).</dd>
+        <dt>Theft or a crash?</dt><dd>The renter reports it in the app; for theft they also call DPS. If the scooter was locked properly, the renter owes nothing. Planned for the pilot: a safety fund pays the owner, backed by insurance before any real rides.</dd>
         <dt>What if a photo is unclear?</dt><dd>The renter can retake it, or send it to a person and keep going. Billing doesn’t wait for the review.</dd>
       </dl>
     </section>
@@ -98,8 +101,8 @@
 
     <section class="lp-real">
       <h2>What’s real in this prototype</h2>
-      <p><b>Real:</b> the whole app and the AI photo checks. <b>Simulated:</b> USC sign-in, payments and the lock. To try a full rental: sign in, book Big Red, and use the demo photos at each step.</p>
-      <button class="lp-show" onclick="demoJump('#/rules')">Read the full rules</button>
+      <p><b>Real:</b> the app and its rules, and the AI checks of the battery, parking and damage photos (live model calls on drawn demo photos). <b>Simulated:</b> USC sign-in, payments, other students and their bookings, rack scans, the lock and key box, DPS registration and staff review. The sample license skips the AI; a real license photo is checked live. To try a full rental: sign in, book Big Red, and use the demo photos at each step.</p>
+      <button class="lp-show" onclick="demoJump('#/rules')">Read the full rules</button> <a class="lp-show" href="damian" style="text-decoration:none;display:inline-block">Damian’s day: tap through it yourself →</a>
     </section>
   </main>
   <div class="phonewrap" id="phonewrap">

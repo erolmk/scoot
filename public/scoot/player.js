@@ -5,6 +5,7 @@ const Demo = (() => {
   const phone = document.getElementById('phone');
   const W = ms => new Promise(r => setTimeout(r, ms));
   let run = 0, active = null, paused = false, cur, veil, clock;
+  let pace = 1;                                   // 3 = the landing-page walkthroughs play at a third of the speed
   class Stopped extends Error { }
   const bar = () => document.getElementById('plbar');
 
@@ -22,7 +23,7 @@ const Demo = (() => {
   }
   const scale = () => phone.getBoundingClientRect().width / 390;
   const live = tok => { if (tok !== run) throw new Stopped(); };
-  const wait = async (ms, tok) => { for (let left = ms; left > 0;) { await W(Math.min(100, left)); live(tok); if (!paused) left -= 100; } };   // time stands still while paused
+  const wait = async (ms, tok) => { for (let left = ms * pace; left > 0;) { await W(Math.min(100, left)); live(tok); if (!paused) left -= 100; } };   // time stands still while paused
   const say = text => { document.getElementById('pl-say').textContent = text; };
 
   async function find(sel, tok, ms = 20000) {
@@ -143,8 +144,8 @@ const Demo = (() => {
       await go2('#/garage', tok);
       mark('maya', 0);
       await tap('[onclick="A.addVehicle()"]', tok, 'Maya opens her Garage and adds her scooter');
-      await hover('#modal .btn', tok, 'She gets a smart padlock and a chain, nothing to pay up front', 1400);
-      await tap('#modal .btn', tok, 'Requests her lock kit');
+      await hover('#pick-smart', tok, 'She picks the smart padlock and chain, nothing to pay up front', 1400);
+      await tap('#pick-smart', tok, 'Requests her lock kit');
       mark('maya', 1);
       await hover('#rate-base', tok, 'Sets her prices: $5 to start…', 900); await hover('#rate-hr', tok, '…$2 per extra hour…', 700); await hover('#rate-mi', tok, '…$2 per extra mile', 700);
       await hover('.days', tok, 'Rentable weekdays, 9 AM to 6 PM', 1200);
@@ -177,7 +178,7 @@ const Demo = (() => {
   async function play(key) {
     if (active === key) return pause();            // the card's button doubles as pause/resume
     if (active) { const was = active; run++; reset(was); }
-    ui(); const tok = ++run; active = key; paused = false;
+    ui(); const tok = ++run; active = key; paused = false; pace = 3; cur.classList.add('slow');
     const btn = document.querySelector(`.lp-play[data-story="${key}"]`); btn.textContent = '❚❚ Pause';
     veil.classList.add('on'); bar().classList.add('on'); say('Starting…');
     const card = btn.closest('.lp-case');
@@ -193,6 +194,13 @@ const Demo = (() => {
     const btn = document.querySelector(`.lp-play[data-story="${active}"]`); if (btn) btn.textContent = paused ? '▶ Resume' : '❚❚ Pause';
   }
   function stop() { if (!active) return; const was = active; run++; reset(was); }
+  // Time-skip button for pages where the viewer taps through the app themselves: the clock animation, then the app's clock moves.
+  // Resolves true when the time really passed, false if it was interrupted (another skip, Start over, Stop).
+  async function skip(min, caption) {
+    if (active) stop();
+    ui(); const tok = ++run; active = 'skip'; veil.classList.add('on'); pace = 1; cur.classList.remove('slow');
+    try { await pass(min, caption, tok); return true; } catch (e) { if (!(e instanceof Stopped)) throw e; return false; } finally { if (tok === run) { veil.classList.remove('on'); active = null; } }
+  }
   document.querySelectorAll('.lp-play').forEach(b => b.dataset.label = b.textContent);
-  return { play, pause, stop };
+  return { play, pause, stop, skip };
 })();
