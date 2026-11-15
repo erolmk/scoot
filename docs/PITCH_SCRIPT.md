@@ -1,7 +1,7 @@
 # SCoot: 3-minute pitch script
 
 One block per slide, in order. About 3 minutes at a normal pace.
-Total: 475 words.
+Total: 483 words.
 
 ## Slide 1: cover (25 words)
 SCoot lets a USC student borrow another student’s scooter or bike from the rack outside their dorm, and bring it back to the same rack.
@@ -18,8 +18,8 @@ We talked to twenty students. Six of eight scooter owners said they’d probably
 ## Slide 5: deal (47 words)
 So we start with the owner. They get an eighty-six dollar smart padlock and hardened chain at no cost. No tracker: the renter’s phone logs where the lock opened and closed. Owners keep 70 percent; half of our 30 pays off their lock, then they keep 90.
 
-## Slide 6: how (49 words)
-Every rental is a round trip: pick it up at the owner’s rack, lock it at any rack during class, and bring it back to the same rack, so scooters never drift across campus. Parkside to the Village gym and back is five dollars. Owners set their own prices.
+## Slide 6: how (57 words)
+Every rental is a round trip from the owner’s rack. Tommy rides to the gym and back: an hour and ten minutes, a mile and a half, five dollars. Priya keeps hers all day and comes back twenty minutes late: four extra hours, one extra mile and the fifteen-dollar late fee, thirty dollars. Owners set the prices.
 
 ## Slide 7: app (36 words)
 This is a working prototype you can try now. The photo checks call a real AI model; sign-in, payments and the lock are simulated. Owners see the curfew and their earnings, not where the renter parked.
