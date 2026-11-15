@@ -20,33 +20,37 @@
     <p class="lede">SCoot lets USC students rent out their scooters and bikes to other students. You pick one up at the owner’s dorm rack, ride it, and bring it back to the same rack. The owner earns money while they’re in class.</p>
 
     <section>
-      <h2>How a rental works</h2>
+      <h2>One rental, start to finish</h2>
+      <p>Maya lives in IRC and lends her scooter on weekdays at $5 / $2 / $2. Tommy lives in IRC too.</p>
       <ol class="lp-steps">
-        <li><b>Book.</b> The app lists the scooters and bikes parked at the rack outside your building. Each shows the owner’s price and curfew (the time it must be back). You book one and have 10 minutes to reach it. <button class="lp-show" onclick="demoJump('#/home')">Show me</button></li>
-        <li><b>Pick up.</b> At the rack you take two photos: the battery display and the whole scooter. The AI reads the battery % and keeps the “before” photo. Then your phone opens the lock. <button class="lp-show" onclick="demoJump('pickup')">Show me</button></li>
-        <li><b>Ride.</b> Go to class. While you’re inside, lock it at any campus rack; only you can unlock it. The app shows the cost so far and the battery left.</li>
-        <li><b>Return.</b> Bring it back to the same rack before the curfew. You take one photo of it locked. The AI checks the parking and the lock and compares it with the pickup photo for new damage. Close the lock and the rental ends.</li>
+        <li><b>12:30 · Book.</b> Tommy opens the app and sees the scooters at the IRC rack, each with the owner’s price and curfew (the time it must be back). He books Maya’s. He has 10 minutes to get to it, or the booking cancels for free. <button class="lp-show" onclick="demoJump('#/home')">Show me</button></li>
+        <li><b>12:35 · Pick up.</b> At the rack he takes two photos: the battery display (the AI reads 84%) and the whole scooter (the “before” photo). His phone opens the padlock over Bluetooth. Billing starts. <button class="lp-show" onclick="demoJump('pickup')">Show me</button></li>
+        <li><b>12:45 · Park at class.</b> He rides 0.6 miles to Leavey Library, runs the chain through the frame and a rack, and closes the padlock. Only his phone can open it now. The chain and padlock always stay with the scooter.</li>
+        <li><b>2:00 · Ride home.</b> After class he unlocks it and rides back to the IRC rack.</li>
+        <li><b>2:10 · Return.</b> He photographs the battery (77%), chains the scooter to the same rack, closes the padlock, and takes one photo showing the lock. The AI checks the parking and the lock and compares it with the pickup photo. Billing stops.</li>
+        <li><b>Receipt.</b> 1 hour 35 minutes, 1.2 miles: inside the first 2 hours and 2 miles, so $5. Maya gets $3.50, $0.75 pays off her lock, and $0.75 covers card fees and a safety fund.</li>
       </ol>
     </section>
 
     <section>
-      <h2>What it costs</h2>
+      <h2>Pricing</h2>
       <p>Each owner sets three prices. A typical owner charges:</p>
       <table class="lp-price">
-        <tr><td>First 2 hours and 2 miles</td><td>$5</td></tr>
-        <tr><td>Each extra hour, and each extra mile</td><td>$2</td></tr>
+        <tr><td>Start: the first 2 hours and 2 miles</td><td>$5</td></tr>
+        <tr><td>Each extra hour (rounded up)</td><td>$2</td></tr>
+        <tr><td>Each extra mile (rounded up)</td><td>$2</td></tr>
         <tr><td>Back after the curfew</td><td>$10, once</td></tr>
       </table>
-      <p>Parkside to the Village gym and back (1.4 miles, 1½ hours) is $5. Riding to a 4-hour lecture and back is $11. Electric rides also need a $25 card hold, released after the return. <button class="lp-show" onclick="demoJump('#/v/v1')">Show me</button></p>
+      <p>3 hours and 1 mile: $5 + $2 = $7. A 4-hour lecture plus the rides there and back (4 h 20 min, 1.2 miles): $5 + 3 × $2 = $11. Miles come from the renter’s phone GPS during the ride. Electric rides also need a $25 card hold, released after the return. <button class="lp-show" onclick="demoJump('#/v/v1')">Show me</button></p>
     </section>
 
     <section>
       <h2>What owners do</h2>
       <ul class="lp-list">
-        <li>Get a smart padlock and a hardened chain ($86) at no cost. There is no GPS tracker.</li>
-        <li>Pick the days, hours and prices it can be rented. Charge it themselves.</li>
-        <li>Keep 70% of each fare. Another 15% pays off their lock; once it’s paid off, they keep 85%.</li>
-        <li>See who has it and when it’s due back, not where the renter parked.</li>
+        <li>Get a TTLock smart padlock and a hardened chain ($86 for both) with nothing to pay up front. There is no GPS tracker.</li>
+        <li>Pick the days, hours, curfew and prices. Charge the scooter themselves.</li>
+        <li>Keep 70% of each fare. 15% repays their lock and 15% covers card fees and a safety fund. Once the lock is repaid (about 100 rentals), they keep 85%. If they quit before that, the lock goes back to SCoot.</li>
+        <li>See who has the scooter and when it’s due back, not where the renter parked.</li>
       </ul>
       <button class="lp-show" onclick="demoJump('#/garage')">Show me the owner’s screen</button>
     </section>
@@ -54,17 +58,20 @@
     <section>
       <h2>Logistics</h2>
       <dl class="lp-qa">
-        <dt>Why round trip?</dt><dd>The scooter always ends up back at the owner’s rack, so nobody has to go find it.</dd>
-        <dt>How does the lock open?</dt><dd>The owner’s lock is a TTLock smart padlock. During the rental, the renter’s phone gets a key that expires at the curfew.</dd>
+        <dt>Why a round trip?</dt><dd>The scooter always ends up back at the owner’s rack, so nobody has to go find it.</dd>
+        <dt>How does the lock open?</dt><dd>The padlock opens over Bluetooth from the renter’s phone. Their key works from pickup until they end the rental, even if they’re late.</dd>
+        <dt>What if they’re late?</dt><dd>They still bring it back and pay $10 once, plus any extra hours.</dd>
         <dt>Who is responsible during the ride?</dt><dd>The renter, a signed-in USC student. Their phone records its location at every unlock and lock (the ride log).</dd>
+        <dt>How does the app know the battery?</dt><dd>The AI reads it from the pickup photo. During the ride the app subtracts the miles ridden times that scooter’s drain per mile, and the return photo corrects it.</dd>
         <dt>Battery dies?</dt><dd>The renter kicks it home without the motor, or walks it if that isn’t safe.</dd>
-        <dt>Damage, theft or a crash?</dt><dd>The renter reports it in the app (for theft, they also call DPS). AI-flagged damage keeps the scooter off the app until a person checks it.</dd>
+        <dt>Damage, theft or a crash?</dt><dd>The renter reports it in the app; for theft they also call DPS. If the AI flags new damage, a person compares the before and after photos and decides. The scooter stays off the app until then.</dd>
+        <dt>What if a photo is unclear?</dt><dd>The renter can retake it, or send it to a person and keep going. The review happens after, and the scooter stays off the app until it’s done.</dd>
       </dl>
     </section>
 
     <section>
       <h2>What the AI does</h2>
-      <p>Four checks, all from phone photos: the battery %, parking and lock, new damage since pickup, and the expiry date on a driver’s license (e-scooters only). The AI never approves a rental or charges anyone. Unclear photos go to a person.</p>
+      <p>Four checks, all from phone photos: the battery % (at pickup and return), the parking and lock (at return and whenever you park), new damage since pickup (at return), and the expiry date on a driver’s license (once, before your first e-scooter ride). The AI never approves a rental or charges anyone.</p>
     </section>
 
     <section class="lp-real">

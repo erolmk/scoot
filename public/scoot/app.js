@@ -393,7 +393,7 @@ PAGES.pickup = () => {
   } else if (step === 'condition') {
     body = `<p class="ink2 sm" style="margin-top:0">One photo of the whole ${v.type === 'scooter' ? 'scooter' : 'bike'} at the rack. This is the "before" photo: if someone claims damage later, the AI compares it with your return photo.</p><div id="cap"></div>`;
   } else {
-    body = `<div style="text-align:center"><div class="lockbig" id="lk">${ICON.lock}</div><div class="h3">${esc(v.name)} · lock ${v.id.toUpperCase()}</div><p class="sm muted" style="margin:6px 0 0">In the pilot, the lock maker’s app or our server gives your phone a key that expires at your curfew (${t(b.end)}). This demo simulates the lock.</p></div>
+    body = `<div style="text-align:center"><div class="lockbig" id="lk">${ICON.lock}</div><div class="h3">${esc(v.name)} · lock ${v.id.toUpperCase()}</div><p class="sm muted" style="margin:6px 0 0">In the pilot, your phone gets a Bluetooth key for this padlock. It works until you end the rental (curfew ${t(b.end)}). This demo simulates the lock.</p></div>
      <div class="card" style="margin-top:16px"><div class="kv"><span>Start battery</span><b>${e ? b.pickupBattery + '%' : '—'}</b></div><div class="kv"><span>Before photo</span><b style="color:var(--ok)">Saved ✓</b></div><div class="kv"><span>Back at ${esc(r.name)} by</span><b>${t(b.end)}</b></div></div>`;
     foot = `<button class="btn gold" onclick="A.unlock()">🔓 Unlock with Bluetooth</button><button class="btn ghost sm" style="margin-top:8px" onclick="A.unlock(true)">Demo unlock (no lock nearby)</button>`;
   }
@@ -461,10 +461,10 @@ PAGES.return = () => {
     <div class="note blue" style="margin-top:12px">Home rack full or blocked? Tap "Something went wrong": we'll approve the nearest legal rack instead.</div>`;
     foot = `<button class="btn" onclick="A.rscan()">Scan ${esc(r.id)} rack sticker (simulated)</button><button class="btn ghost sm" style="margin-top:8px" onclick="go('#/problem')">⚠ Something went wrong</button>`;
   } else if (step === 'battery') body = `<p class="ink2 sm" style="margin-top:0">Photo of the display again, so ${esc(v.owner.name)} knows how much charge is left.</p><div id="cap"></div>`;
-  else if (step === 'photo') body = `<p class="ink2 sm" style="margin-top:0">Lock it to the rack, then take one photo of the whole ${v.type === 'scooter' ? 'scooter' : 'bike'} with the lock showing. The AI checks the parking and compares it with your pickup photo for new damage.</p><div id="cap"></div>`;
+  else if (step === 'photo') body = `<p class="ink2 sm" style="margin-top:0">Run the chain through the frame and the rack and close the padlock. Then take one photo of the whole ${v.type === 'scooter' ? 'scooter' : 'bike'} with the lock showing. The AI checks the parking and compares it with your pickup photo for new damage.</p><div id="cap"></div>`;
   else {
-    body = `<div style="text-align:center"><div class="lockbig open" id="lk">${ICON.lock}</div><div class="h3">Close the lock</div><p class="sm muted">In the pilot, the lock’s sensor confirms it’s really shut before the rental ends. This demo simulates the lock.</p></div>`;
-    foot = `<button class="btn" onclick="A.finish()">🔒 Lock & end rental</button>`;
+    body = `<div style="text-align:center"><div class="lockbig" id="lk">${ICON.lock}</div><div class="h3">End the rental</div><p class="sm muted">Billing stops when your return photo is accepted. In the pilot, the padlock also reports that it’s shut. This demo simulates the lock.</p></div>`;
+    foot = `<button class="btn" onclick="A.finish()">End rental</button>`;
   }
   app.innerHTML = `<div class="view">${topbar('Return ' + esc(v.name))}<div class="scroll pad">${bar}${body}<div style="height:16px"></div></div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   if (step === 'battery') mountCapture('#cap', { kind: 'battery', title: 'Battery display', sampleLabel: 'Use demo photo', sample: () => photoDisplay(Math.max(5, estBatt(b, v) - 2)), onPass: r => A.retBattery(r) });
@@ -688,7 +688,7 @@ const A = window.A = {
   },
   parkPick(id) { S.parkPick = id; render(); },
   parkDone(id) { const b = S.booking; meter(); closeLeg(b, rack(b.at || b.rack), rack(id)); b.phase = 'parked'; b.at = id; S.parkPick = null; save(); logLoc('lock', id); toast('Locked at ' + rack(id).name + '. Your time keeps running.'); go('#/ride'); },
-  unpark() { const b = S.booking; meter(); b.phase = 'active'; save(); logLoc('unlock', b.at); toast('Unlocked. Your one-time key still works until ' + t(b.end)); render(); },
+  unpark() { const b = S.booking; meter(); b.phase = 'active'; save(); logLoc('unlock', b.at); toast('Unlocked. Your key works until you end the rental (curfew ' + t(b.end) + ').'); render(); },
   startReturn() { const b = S.booking; meter(); b.phase = 'returning'; b.rstep = 'scan'; save(); go('#/return'); },
   rscan() { const b = S.booking; toast('Home rack ' + b.rack + '-01 matched ✓'); closeLeg(b, rack(b.at || b.rack), rack(b.rack)); b.at = b.rack; b.rstep = isE(S.vehicles.find(x => x.id === b.vid)) ? 'battery' : 'photo'; render(); },
   retBattery(r) { const b = S.booking; b.returnBattery = r.pending ? null : r.percent ?? null; b.rstep = 'photo'; if (r.percent != null && r.percent < RETURN_FLOOR) toast(`${r.percent}% is under ${RETURN_FLOOR}%. No fee, but plan for the trip home next time.`); render(); },
