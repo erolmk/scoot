@@ -20,24 +20,29 @@ const todayAt = h => { const d = new Date(now()); d.setHours(h, 0, 0, 0); return
 function miles(a, b) { const R = 3958.8, r = x => x * Math.PI / 180; const dl = r(b.lat - a.lat), dn = r(b.lng - a.lng); const q = Math.sin(dl / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(q)) * 1.3; } // 1.3 = paths are not straight lines
 
 /* ---------- rules (from the design rulebook) ---------- */
-const BLOCKS = [{ k: 120, label: 'Up to 2 hours' }, { k: 240, label: 'Up to 4 hours' }];
-const MIN_BOOK = 45 * MIN;                                   // a block can be cut short by the owner's window, but not below this
-const PRICE = { e: { 120: 3, 240: 5 }, bike: { 120: 3, 240: 5 } };
-const EXT = { min: 15, price: 0.5 };
+// Pricing: each owner sets a start price (covers the first 2 hours + 2 miles; the minimum rental), a price per started
+// extra hour and a price per started extra mile. The curfew is the owner's back-by time; missing it adds a one-time $10.
+const PRICING = { inclHours: 2, inclMiles: 2, curfewFee: 10 }, RATE0 = { base: 5, hr: 2, mi: 2 };
+const rateOf = v => v.rate || RATE0;
+const MIN_BOOK = 45 * MIN;                                   // need at least this long before the owner's curfew to book
+const rideMiles = b => Math.max(b.miles || 0, b.gpsMiles || 0);
+function bill(b, endTs) {
+  const rt = b.rate || RATE0, hours = Math.max(0, (endTs - (b.startedAt || b.created)) / HOUR), mi = rideMiles(b);
+  const xh = Math.max(0, Math.ceil(hours - PRICING.inclHours - 1e-9)), xm = Math.max(0, Math.ceil(mi - PRICING.inclMiles - 1e-9));
+  const late = endTs > b.end ? PRICING.curfewFee : 0;
+  return { hours, mi, xh, xm, late, rt, total: rt.base + xh * rt.hr + xm * rt.mi + late };
+}
+// Battery estimate: the last AI photo reading minus miles ridden x this scooter's drain per mile.
+// Drain starts at 100% / full-charge range and is re-learned from the before/after photos of every ride.
+const drainOf = v => v.drain || 100 / RANGE[v.range].full;
+const estBatt = (b, v) => Math.max(0, Math.round(b.pickupBattery - rideMiles(b) * drainOf(v)));
 const HOLD = { e: 25, bike: 10 };
 const OWNER_SHARE = 0.7;
-const GRACE = 5 * MIN;
-const LATE = { e: { per15: 1, cap: 12 }, bike: { per15: .5, cap: 6 } };
 const RANGE = { long: { full: 25, min: 40, label: 'Long range' }, medium: { full: 15, min: 50, label: 'Medium range' }, short: { full: 10, min: 60, label: 'Short range' } };
 const RETURN_FLOOR = 20;
 const LAST_RETURN_HOUR = 23;                                // no overnight rentals
 const isE = v => v.type !== 'bike';
 const cls = v => isE(v) ? 'e' : 'bike';
-const priceOf = (v, k) => PRICE[cls(v)][k];
-function lateFee(v, endTs, returnTs) {
-  const over = returnTs - endTs - GRACE; if (over <= 0) return 0;
-  const L = LATE[cls(v)]; return Math.min(L.cap, Math.ceil(over / (15 * MIN)) * L.per15);
-}
 
 /* ---------- places (real coordinates, OpenStreetMap) ---------- */
 const RACKS = [
@@ -62,29 +67,29 @@ function seed() {
   return {
     v: 1, skew: 0, user: null, license: null, agreed: false, filter: 'all', rackFilter: null,
     vehicles: [
-      { id: 'v1', name: 'Big Red', model: 'Segway Ninebot Max G30', type: 'scooter', range: 'long', rack: 'IRC', owner: O('Maya', '#7c3aed', 'IRC'), battery: 84, battAgo: 18, status: 'available', until: until(6), rating: 4.9, trips: 37, color: '#990000' },
-      { id: 'v2', name: 'Gold Rush', model: 'Hiboy S2 Pro', type: 'scooter', range: 'medium', rack: 'IRC', owner: O('Dev', '#0891b2', 'IRC'), battery: 72, battAgo: 41, status: 'available', until: until(3), rating: 4.8, trips: 22, color: '#d4a300' },
-      { id: 'v3', name: 'Fixie Fight On', model: 'State Bicycle 6061', type: 'bike', range: null, rack: 'IRC', owner: O('Sam', '#059669', 'IRC'), battery: null, status: 'available', until: until(8), rating: 5.0, trips: 15, color: '#1f2937' },
-      { id: 'v4', name: 'Pump', model: 'Xiaomi Scooter 4 Pro', type: 'scooter', range: 'long', rack: 'LYON', owner: O('Ava', '#db2777', 'Webb'), battery: 66, battAgo: 25, status: 'available', until: until(4), rating: 4.7, trips: 19, color: '#374151' },
-      { id: 'v5', name: 'Doheny Dash', model: 'NIU KQi3 Pro', type: 'scooter', range: 'medium', rack: 'LEAVEY', owner: O('Leo', '#ea580c', 'Birnkrant'), battery: 91, battAgo: 9, status: 'available', until: until(5), rating: 4.9, trips: 51, color: '#b91c1c' },
-      { id: 'v6', name: 'Conquest', model: 'Rad Power RadMission e-bike', type: 'ebike', range: 'long', rack: 'VILLAGE', owner: O('Priya', '#2563eb', 'McCarthy'), battery: 58, battAgo: 33, status: 'available', until: until(6), rating: 4.8, trips: 12, color: '#0f766e' },
-      { id: 'v7', name: 'Hellman Hauler', model: 'Trek FX 1', type: 'bike', range: null, rack: 'MARKS', owner: O('Nate', '#9333ea', 'Marks'), battery: null, status: 'available', until: until(7), rating: 4.6, trips: 9, color: '#475569' },
-      { id: 'v8', name: 'Little Wheelie', model: 'Segway Ninebot E2', type: 'scooter', range: 'short', rack: 'WEBB', owner: O('Jules', '#ca8a04', 'Webb'), battery: 45, battAgo: 52, status: 'available', until: until(4), rating: 4.5, trips: 8, color: '#64748b' },
-      { id: 'v9', name: 'Viterbi Vroom', model: 'Segway Ninebot Max G30', type: 'scooter', range: 'long', rack: 'RTH', owner: O('Kai', '#16a34a', 'Parkside'), battery: 77, battAgo: 14, status: 'available', until: until(5), rating: 4.9, trips: 30, color: '#7f1d1d' },
-      { id: 'v10', name: 'Spirit', model: 'Apollo City Pro', type: 'scooter', range: 'long', rack: 'BIRN', owner: O('Mia', '#be123c', 'Birnkrant'), battery: 88, battAgo: 6, status: 'available', until: until(6), rating: 5.0, trips: 44, color: '#990000' },
+      { id: 'v1', rate: { base: 5, hr: 2, mi: 2 }, name: 'Big Red', model: 'Segway Ninebot Max G30', type: 'scooter', range: 'long', rack: 'IRC', owner: O('Maya', '#7c3aed', 'IRC'), battery: 84, battAgo: 18, status: 'available', until: until(6), rating: 4.9, trips: 37, color: '#990000' },
+      { id: 'v2', rate: { base: 4, hr: 1.5, mi: 1.5 }, name: 'Gold Rush', model: 'Hiboy S2 Pro', type: 'scooter', range: 'medium', rack: 'IRC', owner: O('Dev', '#0891b2', 'IRC'), battery: 72, battAgo: 41, status: 'available', until: until(3), rating: 4.8, trips: 22, color: '#d4a300' },
+      { id: 'v3', rate: { base: 3, hr: 1, mi: 1 }, name: 'Fixie Fight On', model: 'State Bicycle 6061', type: 'bike', range: null, rack: 'IRC', owner: O('Sam', '#059669', 'IRC'), battery: null, status: 'available', until: until(8), rating: 5.0, trips: 15, color: '#1f2937' },
+      { id: 'v4', rate: { base: 5, hr: 2, mi: 2 }, name: 'Pump', model: 'Xiaomi Scooter 4 Pro', type: 'scooter', range: 'long', rack: 'LYON', owner: O('Ava', '#db2777', 'Webb'), battery: 66, battAgo: 25, status: 'available', until: until(4), rating: 4.7, trips: 19, color: '#374151' },
+      { id: 'v5', rate: { base: 6, hr: 2, mi: 2 }, name: 'Doheny Dash', model: 'NIU KQi3 Pro', type: 'scooter', range: 'medium', rack: 'LEAVEY', owner: O('Leo', '#ea580c', 'Birnkrant'), battery: 91, battAgo: 9, status: 'available', until: until(5), rating: 4.9, trips: 51, color: '#b91c1c' },
+      { id: 'v6', rate: { base: 7, hr: 3, mi: 2 }, name: 'Conquest', model: 'Rad Power RadMission e-bike', type: 'ebike', range: 'long', rack: 'VILLAGE', owner: O('Priya', '#2563eb', 'McCarthy'), battery: 58, battAgo: 33, status: 'available', until: until(6), rating: 4.8, trips: 12, color: '#0f766e' },
+      { id: 'v7', rate: { base: 2, hr: 1, mi: 0.5 }, name: 'Hellman Hauler', model: 'Trek FX 1', type: 'bike', range: null, rack: 'MARKS', owner: O('Nate', '#9333ea', 'Marks'), battery: null, status: 'available', until: until(7), rating: 4.6, trips: 9, color: '#475569' },
+      { id: 'v8', rate: { base: 4, hr: 1.5, mi: 2 }, name: 'Little Wheelie', model: 'Segway Ninebot E2', type: 'scooter', range: 'short', rack: 'WEBB', owner: O('Jules', '#ca8a04', 'Webb'), battery: 45, battAgo: 52, status: 'available', until: until(4), rating: 4.5, trips: 8, color: '#64748b' },
+      { id: 'v9', rate: { base: 5, hr: 2, mi: 2 }, name: 'Viterbi Vroom', model: 'Segway Ninebot Max G30', type: 'scooter', range: 'long', rack: 'RTH', owner: O('Kai', '#16a34a', 'Parkside'), battery: 77, battAgo: 14, status: 'available', until: until(5), rating: 4.9, trips: 30, color: '#7f1d1d' },
+      { id: 'v10', rate: { base: 6, hr: 2.5, mi: 2 }, name: 'Spirit', model: 'Apollo City Pro', type: 'scooter', range: 'long', rack: 'BIRN', owner: O('Mia', '#be123c', 'Birnkrant'), battery: 88, battAgo: 6, status: 'available', until: until(6), rating: 5.0, trips: 44, color: '#990000' },
     ],
     mine: {
-      id: 'mine', name: 'Traveler', model: 'Segway Ninebot Max G30P', type: 'scooter', range: 'long', rack: 'IRC', battery: 61, color: '#990000',
+      id: 'mine', rate: { base: 5, hr: 2, mi: 2 }, name: 'Traveler', model: 'Segway Ninebot Max G30P', type: 'scooter', range: 'long', rack: 'IRC', battery: 61, color: '#990000',
       listed: true, days: [1, 1, 1, 1, 1, 0, 0], from: '09:00', to: '18:00', needBy: null,
-      rental: { renter: 'Jordan K.', renterDorm: 'IRC', start: n - 70 * MIN, end: n + 50 * MIN, block: 120, at: 'LEAVEY', state: 'parked' },
+      rental: { renter: 'Jordan K.', renterDorm: 'IRC', start: n - 70 * MIN, end: n + 50 * MIN, earn: 3.5, at: 'LEAVEY', state: 'parked' },
       kit: { lockBatt: 82, lockClosed: true, tagPing: 2, decal: 'DPS-UPC-48213' },
-      week: [2.1, 3.5, 0, 2.1, 5.6, 0, 0], history: [
-        { who: 'Ava R.', block: 120, earn: 2.1, ago: '1 day ago', checks: 'Battery 31% · parked · no new damage' },
-        { who: 'Dev P.', block: 240, earn: 3.5, ago: '2 days ago', checks: 'Battery 24% · parked · no new damage' },
-        { who: 'Jordan K.', block: 120, earn: 2.1, ago: '3 days ago', checks: 'Battery 52% · parked · no new damage' },
-      ], balance: 13.3,
+      week: [3.5, 7.7, 0, 3.5, 4.9, 0, 0], history: [
+        { who: 'Ava R.', hrs: '1 h 20 m · 1.4 mi', earn: 3.5, ago: '1 day ago', checks: 'Battery 31% · parked · no new damage' },
+        { who: 'Dev P.', hrs: '4 h 40 m · 1.1 mi', earn: 7.7, ago: '2 days ago', checks: 'Battery 24% · parked · no new damage' },
+        { who: 'Jordan K.', hrs: '50 m · 0.8 mi', earn: 3.5, ago: '3 days ago', checks: 'Battery 52% · parked · no new damage' },
+      ], balance: 19.6,
     },
-    booking: null, trips: [], wallet: [{ d: 'Traveler rentals this week', a: 13.3, ago: 'this week' }],
+    booking: null, trips: [], wallet: [{ d: 'Traveler rentals this week', a: 19.6, ago: 'this week' }],
     reports: [],
   };
 }
@@ -251,9 +256,9 @@ PAGES.onboard = () => {
   <div class="card col" style="margin-top:12px"><div class="h3">2 · The SCoot deal</div>
    <ol class="rules sm" style="padding-left:18px;margin:4px 0">
    <li><b>Round trip.</b> Bring it back to the same rack you got it from.</li>
-   <li><b>Two prices:</b> up to 2 hours $3, up to 4 hours $5. Parking still counts as your time.</li>
+   <li><b>Owners set the price:</b> a start price covers 2 hours and 2 miles, then a price per extra hour and per extra mile. Most are $5, $2, $2.</li>
    <li><b>Photos at pickup and return.</b> AI reads the battery and checks parking, lock and damage.</li>
-   <li><b>Keep 20% battery for the trip home.</b> If it dies, you walk it home.</li>
+   <li><b>Be back by the curfew.</b> Miss it and it’s $10. If the battery dies, kick it home without the motor.</li>
    <li><b>Lock it at a rack</b> every time you leave it. No passengers, no overnight.</li></ol>
    <a class="link sm" href="#/rules">Read all the rules →</a></div><div style="height:16px"></div></div>
   <div class="foot"><button class="btn" ${L ? '' : 'disabled'} onclick="A.agree()">I agree · Let's ride</button>
@@ -268,7 +273,7 @@ PAGES.home = () => {
   const ready = v => v.status === 'available' && (!isE(v) || v.battery >= RANGE[v.range].min) && v.until - now() >= MIN_BOOK + 10 * MIN;
   const at = list.filter(v => v.rack === (S.rackFilter || me.dorm)), others = S.rackFilter ? [] : list.filter(v => v.rack !== me.dorm).sort((a, b) => miles(home, rack(a.rack)) - miles(home, rack(b.rack)));
   const b = S.booking, live = b && ['booked', 'active', 'parked', 'returning'].includes(b.phase);
-  const row = v => { const ok = ready(v); return `<button class="veh" onclick="go('#/v/${v.id}')" style="${ok ? '' : 'opacity:.55'}"><div class="thumb">${art(v)}</div><div class="grow"><div class="b">${esc(v.name)}</div><div class="xs muted">${esc(v.model)}</div><div class="row" style="gap:8px;margin-top:4px">${battChip(v.battery)}<span class="xs muted">· ${ok ? 'free till ' + t(v.until) : v.status !== 'available' ? 'in use' : isE(v) && v.battery < RANGE[v.range].min ? 'needs charge' : 'unavailable'}</span></div></div><div class="price">${money(priceOf(v, 120))}<div class="xs muted" style="font-weight:600">up to 2h</div></div></button>`; };
+  const row = v => { const ok = ready(v); return `<button class="veh" onclick="go('#/v/${v.id}')" style="${ok ? '' : 'opacity:.55'}"><div class="thumb">${art(v)}</div><div class="grow"><div class="b">${esc(v.name)}</div><div class="xs muted">${esc(v.model)}</div><div class="row" style="gap:8px;margin-top:4px">${battChip(v.battery)}<span class="xs muted">· ${ok ? 'free till ' + t(v.until) : v.status !== 'available' ? 'in use' : isE(v) && v.battery < RANGE[v.range].min ? 'needs charge' : 'unavailable'}</span></div></div><div class="price">${money(rateOf(v).base)}<div class="xs muted" style="font-weight:600">2 h + 2 mi</div></div></button>`; };
   app.innerHTML = `<div class="view"><div class="mapwrap"><div id="map"></div>
    <div class="maptop"><div class="search"><div class="av">${esc(me.name[0])}</div><div class="grow">Rides near <b>${esc(home.name)}</b></div><span class="chip gold">${S.vehicles.filter(ready).length} free</span></div>
    <div class="chips">${[['all', 'All'], ['scooter', '🛴 Scooters'], ['bike', '🚲 Bikes & e-bikes']].map(([k, l]) => `<button class="chip ${S.filter === k ? 'on' : ''}" onclick="A.filter('${k}')">${l}</button>`).join('')}${S.rackFilter ? `<button class="chip red" onclick="A.rack(null)">${esc(rack(S.rackFilter).name)} ✕</button>` : ''}</div></div>
@@ -298,21 +303,18 @@ PAGES.v = id => {
   const v = S.vehicles.find(x => x.id === id); if (!v) return go('#/home');
   const r = rack(v.rack), e = isE(v), rc = e && RANGE[v.range];
   const lowBatt = e && v.battery < rc.min, maxMs = Math.min(v.until, endOfDay()) - now();
-  const okBlock = b => b === BLOCKS[0] ? maxMs >= MIN_BOOK + 10 * MIN : maxMs > (BLOCKS[0].k + 10) * MIN;
-  const sel = S.sel && S.sel.vid === id ? S.sel.k : BLOCKS.find(okBlock)?.k;
-  const endFor = k => Math.min(now() + 10 * MIN + k * MIN, v.until);
+  const canBook = maxMs >= MIN_BOOK + 10 * MIN, curfew = Math.min(v.until, endOfDay()), rt = rateOf(v);
   const busy = S.booking && ['booked', 'active', 'parked'].includes(S.booking.phase);
   app.innerHTML = `<div class="view"><div class="scroll"><div class="hero-veh"><div class="row"><button class="back" onclick="back()">‹</button><div class="grow"></div><span class="chip">${v.type === 'bike' ? '🚲 Bike' : v.type === 'ebike' ? '⚡ E-bike' : '🛴 E-scooter'}</span></div>
    <div class="art">${art(v, 190)}</div><h2 style="margin:0;font-size:28px;letter-spacing:-.8px">${esc(v.name)}</h2><div class="muted sm">${esc(v.model)}${rc ? ' · ' + rc.label : ''}</div>
-   <div class="stats"><div class="stat"><b>${e ? v.battery + '%' : '—'}</b><small>${e ? `AI-read ${v.battAgo} min ago` : 'pedal power'}</small></div><div class="stat"><b>${e ? '~' + Math.round(v.battery / 100 * rc.full * .9) + ' mi' : '∞'}</b><small>est. range</small></div><div class="stat"><b>★ ${v.rating.toFixed(1)}</b><small>${v.trips} trips</small></div></div></div>
+   <div class="stats"><div class="stat"><b>${e ? v.battery + '%' : '—'}</b><small>${e ? `AI-read ${v.battAgo} min ago` : 'pedal power'}</small></div><div class="stat"><b>${e ? '~' + Math.round(v.battery / drainOf(v) * .9) + ' mi' : '∞'}</b><small>est. range</small></div><div class="stat"><b>★ ${v.rating.toFixed(1)}</b><small>${v.trips} trips</small></div></div></div>
    <div class="pad"><div class="sec">Owner</div><div class="card owner"><div class="avatar" style="background:${v.owner.color}">${esc(v.owner.initials)}</div><div class="grow"><div class="b">${esc(v.owner.name)} · lives in ${esc(v.owner.dorm)}</div><div class="xs muted">USC verified · lends it until ${t(v.until)} today</div></div><span class="chip green">✓ NetID</span></div>
    <div class="sec">Round trip</div><div class="card row"><div style="font-size:26px">🔁</div><div class="grow"><div class="b">${esc(r.name)}</div><div class="xs muted">Pick up here, bring it back here. ${esc(r.sub)}.</div></div></div>
    ${lowBatt ? `<div class="note red" style="margin-top:12px">🔋 Battery is ${v.battery}%. ${rc.label} scooters need ${rc.min}% to start a rental. The owner has been asked to charge it.</div>` : ''}
-   <div class="sec">How long?</div><div class="opts">${BLOCKS.map(b => `<button class="opt ${sel === b.k ? 'on' : ''}" ${!okBlock(b) || lowBatt ? 'disabled' : ''} onclick="A.sel('${id}',${b.k})"><b>${b.label}</b><small>${money(priceOf(v, b.k))}</small></button>`).join('')}</div>
-   <p class="xs muted" style="margin:10px 2px">${maxMs < 4 * HOUR ? `${esc(v.owner.name)} needs it back by ${t(v.until)}. ` : ''}Two simple prices. No unlock fee, no per-minute meter. Parking during your block is included.</p>
-   ${sel ? `<div class="card" style="margin-top:6px"><div class="kv"><span>${BLOCKS.find(b => b.k === sel).label}</span><span>${money(priceOf(v, sel))}</span></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div><div class="kv"><span>Back at ${esc(r.name)} by</span><b>${t(endFor(sel))}</b></div><div class="kv xs"><span>${esc(v.owner.name)} gets</span><span>${money(priceOf(v, sel) * OWNER_SHARE)} (70%)</span></div></div>` : ''}
+   <div class="sec">Price, set by ${esc(v.owner.name)}</div><div class="card"><div class="kv"><span>Start: first 2 hours + 2 miles</span><b>${money(rt.base)}</b></div><div class="kv"><span>Each extra hour</span><span>${money(rt.hr)}</span></div><div class="kv"><span>Each extra mile</span><span>${money(rt.mi)}</span></div><div class="kv"><span>Curfew: back at ${esc(r.name)} by</span><b>${t(curfew)}</b></div><div class="kv"><span>Miss the curfew</span><span>$10.00</span></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div><div class="kv xs"><span>${esc(v.owner.name)} gets</span><span>70% of what you pay</span></div></div>
+   <p class="xs muted" style="margin:10px 2px">Parkside to the Village gym and back (1.4 mi, 1½ h): ${money(rt.base)}. To a 4-hour lecture and back (about 4 h 20 min): ${money(rt.base + 3 * rt.hr)}. Distance comes from your phone’s GPS.</p>
    <div style="height:20px"></div></div></div>
-   <div class="foot">${busy ? `<button class="btn dark" onclick="go('#/ride')">You already have a rental →</button>` : e && v.type === 'scooter' && !S.license ? `<button class="btn" onclick="go('#/onboard')">Verify license to ride scooters</button>` : `<button class="btn" ${sel && !lowBatt ? '' : 'disabled'} onclick="A.book('${id}')">Book ${sel ? BLOCKS.find(b => b.k === sel).label.replace('Up to', 'up to') + ' · ' + money(priceOf(v, sel)) : ''}</button>`}</div></div>`;
+   <div class="foot">${busy ? `<button class="btn dark" onclick="go('#/ride')">You already have a rental →</button>` : e && v.type === 'scooter' && !S.license ? `<button class="btn" onclick="go('#/onboard')">Verify license to ride scooters</button>` : `<button class="btn" ${canBook && !lowBatt ? '' : 'disabled'} onclick="A.book('${id}')">Book · ${money(rt.base)} to start</button>`}</div></div>`;
 };
 
 PAGES.pickup = () => {
@@ -345,24 +347,25 @@ PAGES.ride = () => {
   const b = S.booking; if (!b || !['active', 'parked'].includes(b.phase)) return go(b && b.phase === 'booked' ? '#/pickup' : b && b.phase === 'returning' ? '#/return' : '#/home');
   const v = S.vehicles.find(x => x.id === b.vid), r = rack(b.rack), e = isE(v);
   const parked = b.phase === 'parked', here = rack(b.at || b.rack);
-  const est = e ? Math.max(0, Math.round(b.pickupBattery - b.rideMin * 0.45)) : null;
+  const est = e ? estBatt(b, v) : null, rangeLeft = e ? Math.max(0, (est - 5) / drainOf(v)) : 0, rt = b.rate || RATE0;
   const homeMi = miles(here, r), walkMin = Math.round(homeMi / 3 * 60);
   app.innerHTML = `<div class="view ride">${topbar('Your ride', false, `<span class="chip" style="background:#2e2522;color:#fff;box-shadow:none">${esc(v.name)}</span>`)}
-  <div class="scroll pad"><div class="ridecard"><div class="xs muted b" id="lbl">TIME LEFT · back by ${t(b.end)}</div><div class="timer" id="tm">--:--</div>
+  <div class="scroll pad"><div class="ridecard"><div class="xs muted b" id="lbl">CURFEW · back by ${t(b.end)}</div><div class="timer" id="tm">--:--</div>
    <div class="row" style="margin-top:10px;gap:8px"><span class="chip" style="background:${parked ? '#3b2f12' : '#123b22'};color:${parked ? 'var(--gold)' : '#7CFC9a'};box-shadow:none">${parked ? '🔒 Locked at ' + esc(here.name) : '🛴 Riding'}</span><span class="xs muted" id="late"></span></div></div>
-   ${e ? `<div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">BATTERY ESTIMATE</div><div style="font-size:26px;font-weight:900">~${est}%</div></div><div style="text-align:right" class="xs muted">started ${b.pickupBattery}% (AI-read)<br>keep ≥ ${RETURN_FLOOR}% for the trip home</div></div>
-     <div class="gauge"><i style="width:${est}%"></i><u style="left:${RETURN_FLOOR}%"></u></div>${est < 30 ? `<div class="note red" style="margin-top:10px">Low battery. Head back to ${esc(r.name)} now. If it dies, you walk it home.</div>` : ''}</div>` : ''}
+   ${e ? `<div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">BATTERY ESTIMATE</div><div style="font-size:26px;font-weight:900">~${est}%</div></div><div style="text-align:right" class="xs muted">${b.pickupBattery}% in the pickup photo<br>− ${rideMiles(b).toFixed(1)} mi × ${drainOf(v).toFixed(1)}% per mile</div></div>
+     <div class="gauge"><i style="width:${est}%"></i><u style="left:${RETURN_FLOOR}%"></u></div><div class="xs muted" style="margin-top:8px">About ${rangeLeft.toFixed(1)} mi of range left · home rack is ${homeMi.toFixed(1)} mi away</div>${rangeLeft < homeMi + 0.5 || est < 30 ? `<div class="note red" style="margin-top:10px">Low battery. Head back to ${esc(r.name)} now. If it dies, you kick it home without the motor.</div>` : ''}</div>` : ''}
+   <div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">COST SO FAR</div><div style="font-size:26px;font-weight:900" id="cost">${money(rt.base)}</div></div><div style="text-align:right" class="xs muted" id="usage"></div></div><div class="xs muted" style="margin-top:6px">${money(rt.base)} covers 2 hours + 2 miles. Then ${money(rt.hr)} per extra hour, ${money(rt.mi)} per extra mile (${esc(v.owner.name)}’s prices).</div></div>
    <div class="ridecard" style="margin-top:12px"><div class="xs muted b" style="margin-bottom:8px">HOME RACK</div><div class="minimap" id="mm"></div>
     <div class="kv" style="margin-top:8px"><span>${esc(r.name)}</span><b>${parked && b.at !== b.rack ? homeMi.toFixed(1) + ' mi · ' + walkMin + ' min walk' : b.at === b.rack ? "you're here" : 'round trip'}</b></div><div class="xs muted">${ROUTES_BLOCKED}</div></div>
    <div class="ridecard" style="margin-top:12px"><div class="xs muted b" style="margin-bottom:4px">RIDE LOG</div>${(b.log || []).map(l => `<div class="kv"><span>${l.kind === 'unlock' ? '🔓 Unlocked' : '🔒 Locked'} · ${esc(l.place)}</span><b>${t(l.t)}</b></div>`).join('') || '<div class="xs muted">Nothing yet.</div>'}<div class="xs muted" style="margin-top:4px">Your phone’s location at every unlock and lock. Kept for disputes and theft reports, never shown to the owner.</div></div>
-   <div class="row2" style="margin-top:12px">${parked ? `<button class="btn gold sm" onclick="A.unpark()">🔓 Unlock & ride</button>` : `<button class="btn ghost sm" onclick="go('#/park')">🔒 Lock at a rack</button>`}<button class="btn ghost sm" onclick="A.extend()">＋ 15 min</button></div>
-   <button class="btn ghost sm" style="margin-top:10px" onclick="go('#/problem')">⚠ Something went wrong</button>
+   <div class="row2" style="margin-top:12px">${parked ? `<button class="btn gold sm" onclick="A.unpark()">🔓 Unlock & ride</button>` : `<button class="btn ghost sm" onclick="go('#/park')">🔒 Lock at a rack</button>`}<button class="btn ghost sm" onclick="go('#/problem')">⚠ Problem</button></div>
    <div style="height:12px"></div></div>
   <div class="foot" style="background:none"><button class="btn gold" onclick="A.startReturn()">Return to ${esc(r.name)}</button></div>${tabs('home')}</div>`;
   const upd = () => {
     const left = b.end - now(), el = $('#tm'); if (!el) return;
     el.textContent = (left < 0 ? '+' : '') + clock(left); el.classList.toggle('late', left < 0);
-    if (left < 0) { $('#lbl').textContent = 'LATE · was due ' + t(b.end); const f = lateFee(v, b.end, now()); $('#late').textContent = f ? `late fee so far ${money(f)}` : 'grace period: 5 min, no fee yet'; }
+    if (left < 0) { $('#lbl').textContent = 'CURFEW MISSED · was ' + t(b.end); $('#late').textContent = 'curfew fee $10'; }
+    meter(); const bl = bill(b, now()); $('#cost').textContent = money(bl.total); $('#usage').innerHTML = `${dur(bl.hours * HOUR)} · ${bl.mi.toFixed(1)} mi<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'} · ${bl.xm ? '+' + bl.xm + ' mi' : 'within 2 mi'}`;
   };
   upd(); tick = setInterval(upd, 1000);
   const mmEl = $('#mm');
@@ -380,7 +383,7 @@ PAGES.park = () => {
   const v = S.vehicles.find(x => x.id === b.vid);
   const st = S.parkPick || null;
   app.innerHTML = `<div class="view">${topbar('Lock it at a rack')}<div class="scroll pad">
-   <p class="ink2 sm" style="margin-top:0">Going into class? Lock ${esc(v.name)} to any SCoot rack. Your block keeps running, and only you can unlock it.</p>
+   <p class="ink2 sm" style="margin-top:0">Going into class? Lock ${esc(v.name)} to any SCoot rack. Your time keeps running, and only you can unlock it.</p>
    ${st ? `<div class="card row" style="margin-bottom:12px"><div style="font-size:24px">📍</div><div class="grow"><div class="b">${esc(rack(st).name)}</div><div class="xs muted">${esc(rack(st).sub)}</div></div><button class="link sm" onclick="A.parkPick(null)">Change</button></div><div id="cap"></div>`
       : RACKS.map(r => `<button class="list-btn" onclick="A.parkPick('${r.id}')"><div class="ic" style="background:#f6efe9">${r.id === b.rack ? '★' : '🅿'}</div><div class="grow"><div class="b">${esc(r.name)}</div><div class="xs muted">${esc(r.sub)}</div></div><span class="chev">›</span></button>`).join('')}
    <div style="height:16px"></div></div></div>`;
@@ -404,7 +407,7 @@ PAGES.return = () => {
     foot = `<button class="btn" onclick="A.finish()">🔒 Lock & end rental</button>`;
   }
   app.innerHTML = `<div class="view">${topbar('Return ' + esc(v.name))}<div class="scroll pad">${bar}${body}<div style="height:16px"></div></div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
-  if (step === 'battery') mountCapture('#cap', { kind: 'battery', title: 'Battery display', sampleLabel: 'Use demo photo', sample: () => photoDisplay(Math.max(5, Math.round(b.pickupBattery - b.rideMin * .45))), onPass: r => A.retBattery(r) });
+  if (step === 'battery') mountCapture('#cap', { kind: 'battery', title: 'Battery display', sampleLabel: 'Use demo photo', sample: () => photoDisplay(Math.max(5, estBatt(b, v) - 2)), onPass: r => A.retBattery(r) });
   if (step === 'photo') mountCapture('#cap', { kind: 'return', title: 'Locked at ' + r.name, sampleLabel: 'Use demo photo', sample: () => photoRack(v, b.rack), before: b.beforeImg, onPass: (res) => A.retPhoto(res) });
 };
 
@@ -412,13 +415,14 @@ PAGES.receipt = () => {
   const tr = S.trips[0]; if (!tr) return go('#/home');
   app.innerHTML = `<div class="view">${topbar('Trip complete', false)}<div class="scroll pad" style="text-align:center">
    <div class="success">${ICON.check}</div><h2 style="margin:6px 0 2px;letter-spacing:-.6px">Fight On! ✌</h2><p class="muted sm" style="margin:0 0 16px">${esc(tr.name)} is back at ${esc(tr.rack)}.</p>
-   <div class="card" style="text-align:left"><div class="kv"><span>${esc(tr.blockLabel)}</span><span>${money(tr.price)}</span></div>
-    ${tr.late ? `<div class="kv"><span>Late fee (${dur(tr.lateMs)} past grace)</span><span>${money(tr.late)}</span></div>` : `<div class="kv"><span>Returned on time</span><span style="color:var(--ok)">$0.00</span></div>`}
+   <div class="card" style="text-align:left"><div class="kv"><span>Ride: ${tr.bill ? dur(tr.bill.hours * HOUR) + ' · ' + tr.bill.mi.toFixed(1) + ' mi' : ''}</span><span></span></div><div class="kv"><span>Start (2 hours + 2 miles)</span><span>${money(tr.bill ? tr.bill.rt.base : 0)}</span></div>
+    ${tr.bill && tr.bill.xh ? `<div class="kv"><span>Extra time: ${tr.bill.xh} h × ${money(tr.bill.rt.hr)}</span><span>${money(tr.bill.xh * tr.bill.rt.hr)}</span></div>` : ''}${tr.bill && tr.bill.xm ? `<div class="kv"><span>Extra distance: ${tr.bill.xm} mi × ${money(tr.bill.rt.mi)}</span><span>${money(tr.bill.xm * tr.bill.rt.mi)}</span></div>` : ''}
+    ${tr.late ? `<div class="kv"><span>Curfew missed</span><span>${money(tr.late)}</span></div>` : `<div class="kv"><span>Back before curfew</span><span style="color:var(--ok)">$0.00</span></div>`}
     ${tr.lowBatt ? `<div class="kv"><span>Battery under ${RETURN_FLOOR}% (no fee, just a heads-up)</span><span>$0.00</span></div>` : ''}
     <div class="kv total"><span>Charged</span><span>${money(tr.price + tr.late)}</span></div>
     <div class="kv xs"><span>${money(tr.hold)} hold</span><span>released</span></div><div class="kv xs"><span>${esc(tr.owner)} earns</span><span>${money((tr.price + tr.late) * OWNER_SHARE)}</span></div><div class="kv xs"><span>Safety fund + payments (30%)</span><span>${money((tr.price + tr.late) * (1 - OWNER_SHARE))}</span></div></div>
    <div class="card" style="text-align:left;margin-top:12px"><div class="row" style="margin-bottom:6px"><span class="badge" style="font-size:10.5px;font-weight:850;padding:3px 7px;border-radius:6px;background:var(--ink);color:var(--gold)">AI CHECKS</span></div>
-    <div class="kv sm"><span>Battery start → end</span><b>${tr.b0 != null ? tr.b0 + '% → ' + (tr.b1 ?? '?') + '%' : 'bike'}</b></div><div class="kv sm"><span>Parking + lock</span><b style="color:var(--ok)">OK</b></div><div class="kv sm"><span>Ride log</span><b>${tr.logN || 0} unlock/lock events</b></div><div class="kv sm"><span>New damage vs pickup</span><b style="color:${tr.damage ? 'var(--warn)' : 'var(--ok)'}">${tr.damage ? 'Flagged for review' : 'None seen'}</b></div></div>
+    <div class="kv sm"><span>Battery start → end</span><b>${tr.b0 != null ? tr.b0 + '% → ' + (tr.b1 ?? '?') + '%' : 'bike'}</b></div>${tr.est != null && tr.b1 != null ? `<div class="kv sm"><span>Estimate from distance vs photo</span><b>${tr.est}% vs ${tr.b1}%</b></div>` : ''}<div class="kv sm"><span>Parking + lock</span><b style="color:var(--ok)">OK</b></div><div class="kv sm"><span>Ride log</span><b>${tr.logN || 0} unlock/lock events</b></div><div class="kv sm"><span>New damage vs pickup</span><b style="color:${tr.damage ? 'var(--warn)' : 'var(--ok)'}">${tr.damage ? 'Flagged for review' : 'None seen'}</b></div></div>
    <div class="sec">Rate ${esc(tr.owner)}'s ride</div><div class="stars">${[1, 2, 3, 4, 5].map(i => `<button class="${i <= (tr.stars || 0) ? 'on' : ''}" onclick="A.stars(${i})">★</button>`).join('')}</div><div style="height:20px"></div></div>
    <div class="foot"><button class="btn" onclick="go('#/home')">Done</button></div></div>`;
 };
@@ -438,20 +442,22 @@ PAGES.garage = () => {
   app.innerHTML = `<div class="view">${topbar('My garage', false, `<button class="chip" onclick="A.addVehicle()">＋ Add</button>`)}<div class="scroll pad">
    <div class="card"><div class="row"><div class="thumb" style="width:64px;height:64px;border-radius:16px;background:#f6efe9;display:grid;place-items:center">${art(m, 54)}</div><div class="grow"><div class="h3">${esc(m.name)}</div><div class="xs muted">${esc(m.model)} · home: ${esc(rack(m.rack).name)}</div></div><button class="toggle ${m.listed ? 'on' : ''}" aria-label="Rent it out" onclick="A.list()"></button></div>
     <div class="divider"></div>
-    ${rn ? `<div class="row"><span class="pulse" style="width:10px;height:10px;border-radius:50%;background:var(--cardinal);display:inline-block"></span><div class="grow"><div class="b">Rented by ${esc(rn.renter)} · ${esc(rn.renterDorm)}</div><div class="xs muted">${rn.state === 'parked' ? '🔒 Parked and locked' : '🛴 Riding'} · back by ${t(rn.end)}${now() > rn.end ? ' · <b style="color:var(--bad)">LATE</b>' : ''}</div></div><span class="chip gold">+${money(PRICE.e[rn.block] * OWNER_SHARE)}</span></div>`
+    ${rn ? `<div class="row"><span class="pulse" style="width:10px;height:10px;border-radius:50%;background:var(--cardinal);display:inline-block"></span><div class="grow"><div class="b">Rented by ${esc(rn.renter)} · ${esc(rn.renterDorm)}</div><div class="xs muted">${rn.state === 'parked' ? '🔒 Parked and locked' : '🛴 Riding'} · back by ${t(rn.end)}${now() > rn.end ? ' · <b style="color:var(--bad)">LATE</b>' : ''}</div></div><span class="chip gold">+${money(rn.earn || 3.5)}</span></div>`
       : `<div class="row"><div class="grow"><div class="b">${m.listed ? 'At ' + esc(rack(m.rack).name) + ', ready to rent' : 'Not listed: only you can unlock it'}</div><div class="xs muted">Battery ${m.battery}% (AI-read at last return)</div></div>${m.listed ? '<span class="chip green">Listed</span>' : '<span class="chip">Private</span>'}</div>`}
    </div>
    <div class="sec">This week</div><div class="card"><div class="row"><div class="grow"><div class="big-earn">${money(wk)}</div><div class="xs muted">${m.history.length + (rn ? 1 : 0)} rentals · you keep 70%</div></div><button class="btn sm gold" style="width:auto;padding:10px 14px" onclick="go('#/wallet')">Cash out</button></div>
     <div class="bars">${m.week.map((x, i) => `<div><i class="${x === Math.max(...m.week) && x > 0 ? 'hi' : ''}" style="height:${Math.max(4, x / maxW * 70)}px"></i>${D[i]}</div>`).join('')}</div></div>
+   <div class="sec">Your prices</div><div class="card col"><div class="row2" style="grid-template-columns:1fr 1fr 1fr"><div class="field" style="margin:0"><label>Start (2 h + 2 mi)</label><input type="number" min="1" max="50" step="0.5" value="${rateOf(m).base}" onchange="A.rate('base',this.value)"></div><div class="field" style="margin:0"><label>Extra hour</label><input type="number" min="0" max="20" step="0.5" value="${rateOf(m).hr}" onchange="A.rate('hr',this.value)"></div><div class="field" style="margin:0"><label>Extra mile</label><input type="number" min="0" max="20" step="0.5" value="${rateOf(m).mi}" onchange="A.rate('mi',this.value)"></div></div>
+    <div class="xs muted">Every rental starts with 2 hours and 2 miles for your start price. After that, renters pay your price for each started extra hour and each started extra mile. You keep 70%. Most owners charge $5, $2 and $2.</div></div>
    <div class="sec">When it's rentable</div><div class="card col"><div class="days">${D.map((d, i) => `<button class="${m.days[i] ? 'on' : ''}" onclick="A.day(${i})">${d}</button>`).join('')}</div>
     <div class="row2"><div class="field" style="margin:0"><label>From</label><input type="time" value="${m.from}" onchange="A.win('from',this.value)"></div><div class="field" style="margin:0"><label>Back by</label><input type="time" value="${m.to}" onchange="A.win('to',this.value)"></div></div>
-    <div class="xs muted">Renters can only book blocks that end before your "back by" time, and never overnight. You can pause renting any time; current renters still finish their block.</div></div>
+    <div class="xs muted">Your "back by" time is the renter’s curfew (never overnight). Miss it and they pay $10. You can pause renting any time; current renters still finish.</div></div>
    <div class="sec">Your free starter kit</div><div class="kit">
     <div class="card"><div class="b sm">🔐 Smart lock</div><div class="xs muted">${k.lockClosed ? 'Closed' : 'Open'} · battery ${k.lockBatt}%</div></div>
     <div class="card"><div class="b sm">📍 Ride log</div><div class="xs muted">Every unlock and lock is logged</div></div>
     <div class="card"><div class="b sm">⛓ Hardened chain</div><div class="xs muted">Through the frame and the rack</div></div>
     <div class="card"><div class="b sm">🛡 DPS registered</div><div class="xs muted">${k.decal}</div></div></div>
-   <div class="sec">Recent rentals</div><div class="card">${m.history.map(h => `<div class="hist"><div class="avatar" style="background:#e9e2dd;color:var(--ink);width:34px;height:34px;font-size:12px">${esc(h.who.slice(0, 2))}</div><div class="grow"><div class="b sm">${esc(h.who)} · up to ${h.block / 60}h</div><div class="xs muted">${esc(h.checks)}</div></div><div class="b sm" style="color:var(--ok)">+${money(h.earn)}</div></div>`).join('')}</div>
+   <div class="sec">Recent rentals</div><div class="card">${m.history.map(h => `<div class="hist"><div class="avatar" style="background:#e9e2dd;color:var(--ink);width:34px;height:34px;font-size:12px">${esc(h.who.slice(0, 2))}</div><div class="grow"><div class="b sm">${esc(h.who)} · ${esc(h.hrs || '')}</div><div class="xs muted">${esc(h.checks)}</div></div><div class="b sm" style="color:var(--ok)">+${money(h.earn)}</div></div>`).join('')}</div>
    <div style="height:16px"></div></div>${tabs('garage')}</div>`;
 };
 
@@ -485,13 +491,13 @@ PAGES.profile = () => {
 PAGES.rules = () => {
   app.innerHTML = `<div class="view">${topbar('The rules')}<div class="scroll pad"><ol class="rules sm" style="padding-left:20px">
   <li><b>Same rack, both ends.</b> Pick up and return at the same marked rack. Only a reported safety problem or a full rack allows another approved spot.</li>
-  <li><b>Two prices for everything:</b> up to 2 hours $3, up to 4 hours $5. Need more time? Add 15 minutes for $0.50 before your time runs out (4 hours max). Parking during your block counts as your time.</li>
+  <li><b>Each owner sets a start price</b> that covers your first 2 hours and 2 miles (the shortest rental), plus a price for each extra hour and each extra mile (from your phone’s GPS). Most owners charge $5, $2 and $2. Parking during your ride counts as time.</li>
   <li><b>$25 refundable hold</b> for electric ($10 for bikes). It's released after the return check.</li>
   <li><b>Pick up within 10 minutes</b> of booking, or the booking lapses.</li>
   <li><b>Photos at pickup and return.</b> AI reads the battery and checks parking, lock and new damage. Unclear photos go to a person, never an automatic fine.</li>
   <li><b>Start with enough charge.</b> Long-range scooters need 40% to start, medium 50%, short 60%.</li>
-  <li><b>Keep 20% for the trip home.</b> There's no low-battery fee, but a low return gets a coaching flag. If it dies, walk it back, and report it to get extra time with no late fee.</li>
-  <li><b>5 minutes of grace</b>, then $1 per 15 minutes late (bikes $0.50), capped at $12. After 24 hours missing, it's treated as stolen.</li>
+  <li><b>Battery died?</b> Kick it home to the rack without the motor. It’s still faster than walking. Report it and your curfew moves back 30 minutes.</li>
+  <li><b>Curfew:</b> the owner’s back-by time, shown before you book. Miss it and there’s a one-time $10 fee. After 24 hours missing, it’s treated as stolen.</li>
   <li><b>Lock to a rack</b> every time you leave it. No passengers, no lending your booking to a friend, no overnight rentals.</li>
   <li><b>Walk-only zones:</b> walk it through Hahn Plaza and campus intersections. DPS tickets are on you.</li>
   <li><b>License:</b> e-scooters need a driver's license or learner's permit (CA Vehicle Code 21235). Helmet required under 18.</li></ol><div style="height:20px"></div></div></div>`;
@@ -570,17 +576,15 @@ const A = window.A = {
   rack(id) { S.rackFilter = id; render(); },
   sel(vid, k) { S.sel = { vid, k }; render(); },
   book(vid) {
-    const v = S.vehicles.find(x => x.id === vid), k = S.sel?.vid === vid ? S.sel.k : BLOCKS[0].k;
-    const end = Math.min(now() + 10 * MIN + k * MIN, v.until);
-    if (!k) return;
-    modal(`<div class="h3" style="font-size:20px">Confirm ${esc(v.name)}</div><p class="sm muted">${BLOCKS.find(b => b.k === k).label} · round trip from ${esc(rack(v.rack).name)}</p>
-     <div class="card"><div class="kv"><span>Rental</span><b>${money(priceOf(v, k))}</b></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div><div class="kv"><span>Pick up within</span><span>10 minutes</span></div><div class="kv"><span>Return to ${esc(rack(v.rack).name)} by</span><b>${t(end)}</b></div></div>
-     <div class="note" style="margin:12px 0">After 5 min of grace, late returns cost ${isE(v) ? '$1' : '$0.50'} per 15 min (max ${isE(v) ? '$12' : '$6'}). Need longer? Add 15 min for $0.50 before time runs out.</div>
-     <button class="btn" onclick="A.confirm('${vid}',${k})">Pay ${money(priceOf(v, k))} · Visa 4242 (test)</button>`);
+    const v = S.vehicles.find(x => x.id === vid), curfew = Math.min(v.until, endOfDay()), rt = rateOf(v);
+    modal(`<div class="h3" style="font-size:20px">Confirm ${esc(v.name)}</div><p class="sm muted">Round trip from ${esc(rack(v.rack).name)}</p>
+     <div class="card"><div class="kv"><span>Start (2 hours + 2 miles)</span><b>${money(rt.base)}</b></div><div class="kv"><span>Extra hour / extra mile</span><span>${money(rt.hr)} / ${money(rt.mi)}</span></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div><div class="kv"><span>Pick up within</span><span>10 minutes</span></div><div class="kv"><span>Curfew: back at ${esc(rack(v.rack).name)} by</span><b>${t(curfew)}</b></div></div>
+     <div class="note" style="margin:12px 0">Miss the curfew and it’s a one-time $10. If the battery dies, you kick it home without the motor. Still faster than walking.</div>
+     <button class="btn" onclick="A.confirm('${vid}')">Start for ${money(rt.base)} · Visa 4242 (test)</button>`);
   },
-  confirm(vid, k) {
+  confirm(vid) {
     const v = S.vehicles.find(x => x.id === vid), n = now();
-    S.booking = { vid, k, rack: v.rack, at: v.rack, phase: 'booked', step: 'scan', created: n, pickupBy: n + 10 * MIN, end: Math.min(n + 10 * MIN + k * MIN, v.until), exts: 0, price: priceOf(v, k), hold: HOLD[cls(v)], rideMin: 0 };
+    S.booking = { vid, rack: v.rack, at: v.rack, phase: 'booked', step: 'scan', created: n, pickupBy: n + 10 * MIN, end: Math.min(v.until, endOfDay()), rate: { ...rateOf(v) }, price: rateOf(v).base, hold: HOLD[cls(v)], rideMin: 0, miles: 0 };
     v.status = 'booked'; S.sel = null; save(); closeModal(); toast('Booked! Head to ' + rack(v.rack).name); go('#/pickup');
   },
   cancel() { const b = S.booking; S.vehicles.find(x => x.id === b.vid).status = 'available'; S.booking = null; save(); toast('Booking cancelled. Hold released.'); go('#/home'); },
@@ -611,18 +615,10 @@ const A = window.A = {
     }
   },
   parkPick(id) { S.parkPick = id; render(); },
-  parkDone(id) { const b = S.booking; meter(); b.phase = 'parked'; b.at = id; S.parkPick = null; save(); logLoc('lock', id); toast('Locked at ' + rack(id).name + '. Your block keeps running.'); go('#/ride'); },
+  parkDone(id) { const b = S.booking; meter(); b.miles = (b.miles || 0) + miles(rack(b.at || b.rack), rack(id)); b.phase = 'parked'; b.at = id; S.parkPick = null; save(); logLoc('lock', id); toast('Locked at ' + rack(id).name + '. Your time keeps running.'); go('#/ride'); },
   unpark() { const b = S.booking; meter(); b.phase = 'active'; save(); logLoc('unlock', b.at); toast('Unlocked. Your one-time key still works until ' + t(b.end)); render(); },
-  extend() {
-    const b = S.booking, v = S.vehicles.find(x => x.id === b.vid), newEnd = b.end + EXT.min * MIN;
-    if (now() > b.end) return toast("You're already late. Extensions have to be asked before time runs out.");
-    if (newEnd - (b.startedAt || b.created) > 4 * HOUR + 10 * MIN) return toast('4 hours is the longest rental.');
-    if (newEnd > Math.min(v.until, endOfDay())) return toast(`${v.owner.name} needs it back by ${t(v.until)}. Can't extend.`);
-    modal(`<div class="h3" style="font-size:20px">Add 15 minutes?</div><p class="sm muted">New return time ${t(newEnd)}. ${esc(v.owner.name)}'s window still allows it.</p><div class="card"><div class="kv"><span>Extension</span><b>${money(EXT.price)}</b></div></div><div style="height:12px"></div><button class="btn" onclick="A.doExtend()">Add 15 min · ${money(EXT.price)}</button>`);
-  },
-  doExtend() { const b = S.booking; b.end += EXT.min * MIN; b.price += EXT.price; b.exts = (b.exts || 0) + 1; save(); closeModal(); toast('Extended. Back by ' + t(b.end)); render(); },
   startReturn() { const b = S.booking; meter(); b.phase = 'returning'; b.rstep = 'scan'; save(); go('#/return'); },
-  rscan() { const b = S.booking; toast('Home rack ' + b.rack + '-01 matched ✓'); b.at = b.rack; b.rstep = isE(S.vehicles.find(x => x.id === b.vid)) ? 'battery' : 'photo'; render(); },
+  rscan() { const b = S.booking; toast('Home rack ' + b.rack + '-01 matched ✓'); b.miles = (b.miles || 0) + miles(rack(b.at || b.rack), rack(b.rack)); b.at = b.rack; b.rstep = isE(S.vehicles.find(x => x.id === b.vid)) ? 'battery' : 'photo'; render(); },
   retBattery(r) { const b = S.booking; b.returnBattery = r.percent ?? null; b.rstep = 'photo'; if (r.percent != null && r.percent < RETURN_FLOOR) toast(`${r.percent}% is under ${RETURN_FLOOR}%. No fee, but plan for the trip home next time.`); render(); },
   retPhoto(res) { const b = S.booking; b.damage = !!(res.damage && (res.damage.new_visible_differences || []).length); b.rstep = 'lock'; render(); },
   rstep(s) { S.booking.rstep = s; render(); },
@@ -630,8 +626,10 @@ const A = window.A = {
     const b = S.booking, v = S.vehicles.find(x => x.id === b.vid), lk = $('#lk'); lk.classList.remove('open'); lk.classList.add('busy');
     await logLoc('lock', b.rack);
     setTimeout(() => {
-      const late = lateFee(v, b.end, now());
-      S.trips.unshift({ name: v.name, rack: rack(b.rack).name, owner: v.owner.name, blockLabel: BLOCKS.find(x => x.k === b.k).label, price: b.price, late, lateMs: Math.max(0, now() - b.end - GRACE), hold: b.hold, b0: b.pickupBattery ?? null, b1: b.returnBattery ?? null, lowBatt: b.returnBattery != null && b.returnBattery < RETURN_FLOOR, damage: b.damage, at: now(), logN: (b.log || []).length });
+      const bl = bill(b, now()), late = bl.late; gpsStop();
+      const est = isE(v) && b.pickupBattery != null ? estBatt(b, v) : null;
+      if (est != null && b.returnBattery != null && bl.mi >= 0.5) v.drain = Math.min(15, Math.max(1, .7 * drainOf(v) + .3 * (b.pickupBattery - b.returnBattery) / bl.mi));
+      S.trips.unshift({ name: v.name, rack: rack(b.rack).name, owner: v.owner.name, bill: bl, price: bl.total - late, late, hold: b.hold, b0: b.pickupBattery ?? null, b1: b.returnBattery ?? null, est, lowBatt: b.returnBattery != null && b.returnBattery < RETURN_FLOOR, damage: b.damage, at: now(), logN: (b.log || []).length });
       v.status = 'available'; if (b.returnBattery != null) { v.battery = b.returnBattery; v.battAgo = 0; } v.trips++;
       S.booking = null; save(); go('#/receipt');
     }, 900);
@@ -640,10 +638,10 @@ const A = window.A = {
   problem(k) {
     const b = S.booking, v = S.vehicles.find(x => x.id === b.vid), r = rack(b.rack), here = rack(b.at || b.rack), mi = miles(here, r), wm = Math.max(2, Math.round(mi / 3 * 60));
     const M = {
-      dead: `<div class="h3" style="font-size:20px">🔋 Battery died</div><p class="sm ink2">Walk it back to <b>${esc(r.name)}</b>: about ${mi.toFixed(1)} mi, ${wm} min on foot. Report it now and you get <b>30 extra minutes, no late fee</b>.</p><div class="note red">If it's hot, smoking, leaking or won't roll, stop. Don't move it, step away, and call DPS (213) 740-4321.</div><div style="height:12px"></div><button class="btn" onclick="A.report('dead')">Report & add 30 min</button>`,
+      dead: `<div class="h3" style="font-size:20px">🔋 Battery died</div><p class="sm ink2">Kick it back to <b>${esc(r.name)}</b> without the motor: about ${mi.toFixed(1)} mi. Still faster than walking. Report it now and your <b>curfew moves back 30 minutes</b>.</p><div class="note red">If it's hot, smoking, leaking or won't roll, stop. Don't move it, step away, and call DPS (213) 740-4321.</div><div style="height:12px"></div><button class="btn" onclick="A.report('dead')">Report & move curfew 30 min</button>`,
       broken: `<div class="h3" style="font-size:20px">🛞 It broke on you</div><p class="sm ink2">Not your fault, so it's not your cost. Lock it to the nearest rack and take a photo. We refund the unused time, end your rental there, and ${esc(v.owner.name)} picks it up.</p><button class="btn" onclick="A.report('broken')">Lock here & end rental</button>`,
       lock: `<div class="h3" style="font-size:20px">🔐 Lock trouble</div><p class="sm ink2">1. Stand within 2 m and turn Bluetooth on. 2. Try again. 3. Still stuck? Support can open it remotely or send someone. The clock pauses while it's our problem.</p><button class="btn" onclick="A.report('lock')">Contact support · pause clock</button>`,
-      phone: `<div class="h3" style="font-size:20px">📵 Phone dying</div><p class="sm ink2">Your return time (${t(b.end)}) and home rack (${esc(r.name)}) are saved offline. Lock it at a rack if you can. To finish later, sign in on any phone or ask the IRC front desk. No late fees while support confirms it.</p><button class="btn" onclick="A.report('phone')">Got it</button>`,
+      phone: `<div class="h3" style="font-size:20px">📵 Phone dying</div><p class="sm ink2">Your curfew (${t(b.end)}) and home rack (${esc(r.name)}) are saved offline. Lock it at a rack if you can. To finish later, sign in on any phone or ask the IRC front desk. No late fees while support confirms it.</p><button class="btn" onclick="A.report('phone')">Got it</button>`,
       full: `<div class="h3" style="font-size:20px">🅿 Home rack full</div><p class="sm ink2">Lock it to the nearest legal rack within 100 m of ${esc(r.name)} and take a photo. Support approves the spot and tells ${esc(v.owner.name)} exactly where it is.</p><button class="btn" onclick="A.report('full')">Use nearby rack</button>`,
       stolen: `<div class="h3" style="font-size:20px">🚨 Stolen</div><p class="sm ink2">Don't chase anyone. Call DPS at <b>(213) 740-4321</b>. We send DPS the serial number, its DPS decal and the hidden GPS tag's live location. If it was locked properly, you don't pay for it.</p><a class="btn" href="tel:2137404321" style="text-decoration:none">Call DPS</a><div style="height:8px"></div><button class="btn ghost" onclick="A.report('stolen')">File report</button>`,
       crash: `<div class="h3" style="font-size:20px">🤕 Crash</div><p class="sm ink2">If anyone is hurt, call 911. Then DPS at (213) 740-4321. Your rental pauses and no fees run while we sort it out.</p><a class="btn" href="tel:911" style="text-decoration:none">Call 911</a><div style="height:8px"></div><button class="btn ghost" onclick="A.report('crash')">Report incident</button>`,
@@ -652,19 +650,20 @@ const A = window.A = {
   },
   report(k) {
     const b = S.booking; S.reports.push({ k, at: now() }); closeModal();
-    if (k === 'dead') { b.end += 30 * MIN; toast('Reported. Return time moved to ' + t(b.end)); }
-    else if (k === 'broken') { const v = S.vehicles.find(x => x.id === b.vid); v.status = 'repair'; S.trips.unshift({ name: v.name, rack: rack(b.at || b.rack).name, owner: v.owner.name, blockLabel: 'Partial', price: 0, late: 0, lateMs: 0, hold: b.hold, b0: b.pickupBattery ?? null, b1: null, at: now() }); S.booking = null; save(); toast('Rental ended. Full refund. Owner notified.'); return go('#/home'); }
+    if (k === 'dead') { b.end += 30 * MIN; toast('Reported. Curfew moved to ' + t(b.end)); }
+    else if (k === 'broken') { const v = S.vehicles.find(x => x.id === b.vid); v.status = 'repair'; S.trips.unshift({ name: v.name, rack: rack(b.at || b.rack).name, owner: v.owner.name, price: 0, late: 0, hold: b.hold, b0: b.pickupBattery ?? null, b1: null, at: now() }); S.booking = null; save(); toast('Rental ended. Full refund. Owner notified.'); return go('#/home'); }
     else toast('Support has your report. Reply within 5 min.');
     save(); go('#/ride');
   },
   list() { S.mine.listed = !S.mine.listed; save(); render(); toast(S.mine.listed ? 'Traveler is rentable again' : 'Paused. Current rental still finishes.'); },
   day(i) { S.mine.days[i] = S.mine.days[i] ? 0 : 1; render(); },
+  rate(k, val) { const x = Math.round(parseFloat(val) * 2) / 2, lo = k === 'base' ? 1 : 0; if (!(x >= lo && x <= (k === 'base' ? 50 : 20))) { toast('Pick between ' + money(lo) + ' and ' + money(k === 'base' ? 50 : 20)); return render(); } S.mine.rate = { ...rateOf(S.mine), [k]: x }; save(); toast('Price saved: ' + money(x)); },
   win(k, val) { S.mine[k] = val; save(); toast('Saved'); },
   reserve() { toast('Outlet 2 reserved 9 PM–1 AM. Power cuts off at full.'); },
   addVehicle() { modal(`<div class="h3" style="font-size:20px">Add a scooter or bike</div><p class="sm ink2">We check the model is certified (UL 2272 / UL 2849) and not recalled, register it with DPS, and give you the starter kit for free:</p><ul class="sm ink2" style="line-height:1.7"><li>Smart U-lock (opens with your phone)</li><li>Hardened chain</li><li>Ride log from the renter’s phone</li><li>DPS registration decal</li></ul><button class="btn" onclick="closeModal();toast('Kit requested: pick up at the IRC front desk')">Request my kit</button>`); },
   cashout() { toast('Payout of ' + money(S.mine.balance) + ' sent (Stripe test mode)'); S.wallet.unshift({ d: 'Cash out to bank', a: -S.mine.balance, ago: 'just now' }); S.mine.balance = 0; save(); render(); },
   ff(m) { S.skew = (S.skew || 0) + m * MIN; meter(); save(); toast('Clock moved ' + m + ' minutes ahead'); render(); },
-  ownerReturn() { const m = S.mine; if (!m.rental) return toast('Traveler is already home.'); m.history.unshift({ who: m.rental.renter, block: m.rental.block, earn: PRICE.e[m.rental.block] * OWNER_SHARE, ago: 'just now', checks: 'Battery 38% · parked at IRC · no new damage' }); m.week[(new Date(now()).getDay() + 6) % 7] += PRICE.e[m.rental.block] * OWNER_SHARE; m.balance += PRICE.e[m.rental.block] * OWNER_SHARE; m.battery = 38; m.rental = null; save(); toast('Jordan returned Traveler to IRC. +' + money(PRICE.e[120] * OWNER_SHARE)); go('#/garage'); },
+  ownerReturn() { const m = S.mine; if (!m.rental) return toast('Traveler is already home.'); m.history.unshift({ who: m.rental.renter, hrs: '1 h 10 m · 1.0 mi', earn: m.rental.earn, ago: 'just now', checks: 'Battery 38% · parked at IRC · no new damage' }); m.week[(new Date(now()).getDay() + 6) % 7] += m.rental.earn; m.balance += m.rental.earn; m.battery = 38; m.rental = null; save(); toast('Jordan returned Traveler to IRC. +' + money(3.5)); go('#/garage'); },
   reset() { if (!confirm('Reset all demo data?')) return; S = seed(); save(); go('#/welcome'); render(); },
   logout() { S.user = null; save(); go('#/welcome'); },
 };
@@ -676,6 +675,7 @@ async function logLoc(kind, fallbackRack) {
   let pos = null;
   try {
     const st = navigator.permissions ? (await navigator.permissions.query({ name: 'geolocation' })).state : 'prompt';
+    if (st === 'granted' || (st === 'prompt' && matchMedia('(pointer:coarse)').matches)) { if (kind === 'unlock') gpsStart(); else gpsStop(); }
     if (st === 'granted' || (st === 'prompt' && matchMedia('(pointer:coarse)').matches))
       pos = await new Promise(res => navigator.geolocation.getCurrentPosition(p => res(p.coords), () => res(null), { timeout: 5000, maximumAge: 30000 }));
   } catch { }
@@ -683,6 +683,16 @@ async function logLoc(kind, fallbackRack) {
   b.log.push(pos ? { kind, t: now(), place: nearestRack(pos.latitude, pos.longitude), gps: true } : { kind, t: now(), place: r.name, gps: false });
   save();
 }
+// Real phones: while riding, add up GPS movement (ignores jitter under 15 m).
+let gpsWatch = null, gpsLast = null;
+function gpsStart() {
+  if (!navigator.geolocation || gpsWatch != null) return;
+  gpsWatch = navigator.geolocation.watchPosition(p => {
+    const b = S.booking, c = { lat: p.coords.latitude, lng: p.coords.longitude }; if (!b) return;
+    if (gpsLast) { const d = miles(gpsLast, c) / 1.3; if (d > 0.01) { b.gpsMiles = (b.gpsMiles || 0) + d; gpsLast = c; save(); } } else gpsLast = c;
+  }, () => { }, { enableHighAccuracy: true, maximumAge: 5000 });
+}
+function gpsStop() { if (gpsWatch != null) navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null; gpsLast = null; }
 function meter() { const b = S.booking; if (!b) return; if (b.phase === 'active') b.rideMin += Math.max(0, (now() - (b.lastTick || now())) / MIN); b.lastTick = now(); }
 window.go = go; window.back = back; window.closeModal = closeModal; window.toast = toast;
 

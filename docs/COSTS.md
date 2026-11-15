@@ -36,4 +36,4 @@ Charging is the owner's job, so the pilot buys no charging equipment.
 
 Running costs with paid staff are mostly people at $20 an hour (on-call duty, inspections), plus an insurance placeholder of $300 a month. In the volunteer version, trained student volunteers take the on-call shifts. Insurance, card fees and hosting stay.
 
-Rental fares (about $160 a month at 40 rentals) don't cover the pilot. It's a subsidized experiment.
+Rental fares (about $240 a month at 40 rentals of about $6; SCoot's 30% share is about $70) don't cover the pilot. It's a subsidized experiment.

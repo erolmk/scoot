@@ -14,7 +14,8 @@ Live prototype: **https://seamengine.com/scoot/** · Pitch deck: **https://seame
 Owners get a smart lock on free loan. In return, their scooter or bike can be borrowed by other verified students while it would otherwise sit idle.
 
 - **Round trip.** Pick it up at the owner's rack, bring it back to the same rack. No rebalancing problem.
-- **Two prices.** Up to 2 hours $3, up to 4 hours $5. The owner keeps 70%; 30% covers card fees and a safety fund.
+- **Owners set the price.** A start price covers the first 2 hours and 2 miles (the shortest rental), then a price per extra hour and per extra mile. Most owners use $5, $2 and $2: Parkside to the Village gym and back is $5, a 4-hour lecture is $11. Missing the owner's curfew costs $10. The owner keeps 70%; 30% covers card fees and a safety fund.
+- **Battery estimate.** The AI reads the battery from a photo at pickup; during the ride the app subtracts the miles ridden times that scooter's drain per mile, and re-learns the drain from each ride's before and after photos. If it dies anyway, the renter kicks it home without the motor.
 - **Only Trojans.** USC NetID sign-in, plus a license check for e-scooters (CA Vehicle Code 21235).
 - **Cheap lock, no tracker.** A $48 TTLock smart padlock plus a $38 hardened chain. The renter's phone logs location at every unlock and lock (the ride log), so the lock needs no GPS and there's no monthly fee.
 - **Owners charge their own scooters.**

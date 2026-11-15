@@ -1,4 +1,4 @@
-> **Update (Nov 14 2026):** charging is the owner's job (no charging stations) and the lock kit is a $48 TTLock padlock + chain with no tracker. See COSTS.md. The rest of this rulebook still applies.
+> **Update (Nov 14 2026):** charging is the owner's job (no charging stations) and the lock kit is a $48 TTLock padlock + chain with no tracker. See COSTS.md. Pricing is now set by each owner: a start price covering the first 2 hours and 2 miles (usually $5), then a price per extra hour and per extra mile (usually $2 each). Missing the owner's curfew costs $10, and a renter whose battery dies kicks it home without the motor. Older block prices and late fees below are replaced. The rest of this rulebook still applies.
 
 # TroyLoop Rulebook
 
