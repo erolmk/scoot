@@ -21,8 +21,8 @@ function miles(a, b) { const R = 3958.8, r = x => x * Math.PI / 180; const dl = 
 
 /* ---------- rules (from the design rulebook) ---------- */
 // Pricing: each owner sets a start price (covers the first 2 hours + 2 miles; the minimum rental), a price per started
-// extra hour and a price per started extra mile. The curfew is the owner's back-by time; missing it adds a one-time $10.
-const PRICING = { inclHours: 2, inclMiles: 2, curfewFee: 10 }, RATE0 = { base: 5, hr: 2, mi: 2 };
+// extra hour and a price per started extra mile. The curfew is the owner's back-by time; missing it adds a one-time $15.
+const PRICING = { inclHours: 2, inclMiles: 2, curfewFee: 15 }, RATE0 = { base: 5, hr: 2, mi: 2 };
 const rateOf = v => v.rate || RATE0;
 const MIN_BOOK = 45 * MIN;                                   // need at least this long before the owner's curfew to book
 const rideMiles = b => (b.miles || 0) + (b.legGps || 0);
@@ -41,18 +41,20 @@ const battAge = v => v.battAt ? Math.max(0, Math.round((now() - v.battAt) / MIN)
 const estBatt = (b, v) => Math.max(0, Math.round((b.pickupBattery ?? v.battery ?? 0) - rideMiles(b) * drainOf(v)));
 const HOLD = { e: 25, bike: 10 };
 // The 30% SCoot keeps: half pays off the owner's $86 lock kit, half covers card fees + the safety fund.
-// Once the kit is paid off, the owner keeps 85%.
-const KIT = 86, SPLIT = { owner: .70, kit: .15, ops: .15 }, PAID_OFF_SHARE = .85;
+// Once the kit is paid off, the owner keeps 90% and SCoot keeps 10% for card fees and the safety fund.
+const KIT = 86, SPLIT = { owner: .70, kit: .15, ops: .15 }, PAID_OFF_SHARE = .90;
 const kitLeft = v => Math.max(0, KIT - (v.kitPaid || 0));
 const ownerShare = v => kitLeft(v) > 0 ? SPLIT.owner : PAID_OFF_SHARE;
 function split(v, fare) {   // -> { owner, kit, ops } in dollars for one fare
-  const c = Math.round(fare * 100), kit = Math.min(Math.round(kitLeft(v) * 100), Math.round(c * SPLIT.kit)), ops = Math.round(c * SPLIT.ops);
+  const c = Math.round(fare * 100), kit = Math.min(Math.round(kitLeft(v) * 100), Math.round(c * SPLIT.kit)), ops = Math.round(c * (kitLeft(v) > 0 ? SPLIT.ops : 1 - PAID_OFF_SHARE));
   return { owner: (c - kit - ops) / 100, kit: kit / 100, ops: ops / 100 };
 }
 const RANGE = { long: { full: 25, min: 40, label: 'Long range' }, medium: { full: 15, min: 50, label: 'Medium range' }, short: { full: 10, min: 60, label: 'Short range' } };
 const RETURN_FLOOR = 20;
 const LAST_RETURN_HOUR = 23;                                // no overnight rentals
 const isE = v => v.type !== 'bike';
+// Demo owners get fictional 555-01xx numbers (the range reserved for fiction).
+const phoneOf = o => o.phone || '(213) 555-01' + String((o.name.charCodeAt(0) * 7 + o.name.length * 3) % 90 + 10);
 const licenseOk = () => !!(S.license && !S.license.pending && S.license.exp && S.license.exp >= new Date(now()).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }));
 const unfinished = b => b && ['booked', 'active', 'parked', 'returning'].includes(b.phase);
 const cls = v => isE(v) ? 'e' : 'bike';
@@ -73,12 +75,14 @@ const rack = id => RACKS.find(r => r.id === id);
 const ROUTES_BLOCKED = 'Hahn Plaza and campus intersections are walk-only zones (DPS tickets).';
 
 /* ---------- state ---------- */
-let S = { skew: 0 };
+// Demo clock: outside 8 AM-8 PM the demo runs at 12:40 PM, so owners' hours look like a normal day.
+function dayClock() { const d = new Date(), h = d.getHours(); if (h >= 8 && h < 20) return 0; d.setHours(12, 40, 0, 0); return d - Date.now(); }
+let S = { skew: dayClock() };
 function seed() {
   const n = now(), until = h => Math.min(roundUp30(n + h * HOUR), endOfDay() || n + h * HOUR);
   const O = (name, color, dorm) => ({ name, initials: name.slice(0, 2).toUpperCase(), color, dorm });
   return {
-    v: 1, skew: 0, user: null, license: null, agreed: false, filter: 'all', rackFilter: null,
+    v: 1, skew: S.skew || 0, user: null, license: null, agreed: false, filter: 'all', rackFilter: null,
     vehicles: [
       { id: 'v1', rate: { base: 5, hr: 2, mi: 2 }, name: 'Big Red', model: 'Segway Ninebot Max G30', type: 'scooter', range: 'long', rack: 'IRC', owner: O('Maya', '#7c3aed', 'IRC'), battery: 84, battAgo: 18, status: 'available', until: until(6), rating: 4.9, trips: 37, kitPaid: 29.6, color: '#990000' },
       { id: 'v2', rate: { base: 4, hr: 1.5, mi: 1.5 }, name: 'Gold Rush', model: 'Hiboy S2 Pro', type: 'scooter', range: 'medium', rack: 'IRC', owner: O('Dev', '#0891b2', 'IRC'), battery: 72, battAgo: 41, status: 'available', until: until(3), rating: 4.8, trips: 22, kitPaid: 17.6, color: '#d4a300' },
@@ -115,7 +119,7 @@ function seed() {
         { who: 'Jordan K.', hrs: '50 m · 0.8 mi', earn: 3.5, ago: '3 days ago', checks: 'Battery 52% · parked · no new damage' },
       ], balance: 19.6,
     },
-    booking: null, trips: [], wallet: [{ d: 'Traveler rentals this week', a: 19.6, ago: 'this week' }],
+    booking: null, trips: [], wallet: [{ d: 'Rentals this week', a: 19.6, ago: 'this week' }],
     reports: [],
   };
 }
@@ -126,7 +130,7 @@ if (S.booking && ['active', 'returning'].includes(S.booking.phase) && navigator.
   navigator.permissions.query({ name: 'geolocation' }).then(p => { if (p.state === 'granted') gpsStart(); }).catch(() => { });
 // ponytail: demo data has fixed times; if the page is opened hours later, refresh vehicle times so rides are bookable again
 if (!S.seededAt) S.seededAt = Date.now();
-if (Date.now() - S.seededAt > 2 * HOUR && !S.booking) { const f = seed(); S.vehicles = f.vehicles.map(fv => { const v = S.vehicles.find(x => x.id === fv.id); return v ? { ...v, until: fv.until, status: v.status === 'booked' || v.status === 'rented' ? fv.status : v.status } : fv; }); if (S.mine.rental) S.mine.rental = f.mine.rental; S.seededAt = Date.now(); S.skew = 0; }
+if (Date.now() - S.seededAt > 2 * HOUR && !S.booking) { S.skew = dayClock(); const f = seed(); S.vehicles = f.vehicles.map(fv => { const v = S.vehicles.find(x => x.id === fv.id); return v ? { ...v, until: fv.until, status: v.status === 'booked' || v.status === 'rented' ? fv.status : v.status } : fv; }); if (S.mine.rental) S.mine.rental = f.mine.rental; S.seededAt = Date.now(); }
 
 /* ---------- toast + modal ---------- */
 let toastT;
@@ -237,8 +241,9 @@ window.addEventListener('hashchange', render);
 function fitPhone() {
   const w = $('#phonewrap'), p = $('#phone'); if (!w) return;
   if (innerWidth <= 520) { p.style.transform = w.style.width = w.style.height = ''; return; }
-  const s = Math.min(1, (innerHeight - 40) / 844);
-  p.style.transform = `scale(${s})`; w.style.width = 390 * s + 'px'; w.style.height = 844 * s + 'px';
+  const s = Math.min(1, (innerHeight - 96) / 844), bar = $('#plbar');   // leaves room under the phone for the demo player bar
+  p.style.transform = `scale(${s})`; w.style.width = 390 * s + 'px'; w.style.height = 844 * s + 56 + 'px';
+  if (bar) { bar.style.top = 844 * s + 10 + 'px'; bar.style.width = 390 * s + 'px'; }
 }
 addEventListener('resize', fitPhone); fitPhone();
 // Landing-page "Show me" buttons drive the phone (signing in the demo user if needed).
@@ -257,7 +262,7 @@ window.demoJump = h => {
 };
 function render() {
   closeModal(); clearInterval(tick); tick = null;
-  if (mapObj) { mapObj.remove(); mapObj = null; }
+  if (mapObj) { mapObj.stop(); mapObj.remove(); mapObj = null; }
   let h = location.hash.replace(/^#\/?/, '') || '';
   if (!S.user && !['welcome', 'login'].includes(h.split('/')[0])) h = 'welcome';
   if (S.user && (h === '' || h === 'welcome' || h === 'login')) h = S.agreed ? 'home' : 'onboard';
@@ -310,12 +315,12 @@ PAGES.onboard = () => {
    <li><b>Round trip.</b> Bring it back to the same rack you got it from.</li>
    <li><b>Owners set the price:</b> a start price covers 2 hours and 2 miles, then a price per extra hour and per extra mile. Most are $5, $2, $2.</li>
    <li><b>Photos at pickup and return.</b> AI reads the battery and checks parking, lock and damage.</li>
-   <li><b>Be back by the curfew.</b> Miss it and it’s $10. If the battery dies, kick it home without the motor.</li>
+   <li><b>Be back by the curfew.</b> Miss it and it’s $15. If the battery dies, kick it home without the motor.</li>
    <li><b>Lock it at a rack</b> every time you leave it. No passengers, no overnight.</li></ol>
    <a class="link sm" href="#/rules">Read all the rules →</a></div><div style="height:16px"></div></div>
   <div class="foot"><button class="btn" ${L ? '' : 'disabled'} onclick="A.agree()">I agree · Let's ride</button>
   <button class="btn ghost sm" style="margin-top:8px" onclick="A.agree(true)">Skip license (bikes only for now)</button></div></div>`;
-  if (!licenseOk()) mountCapture('#lic', { kind: 'license', title: 'Photo of your license', sampleLabel: 'Use sample license', sample: () => photoLicense(), onPass: r => { S.license = r.pending ? { kind: 'Pending staff review (demo)', exp: new Date(now() + 86400e3).toISOString().slice(0, 10), pending: true, at: now() } : { kind: r.document_category === 'instruction_permit' ? 'Learner permit' : 'Driver license', exp: r.expiry_iso, at: now() }; save(); toast('License checked. SCoot didn’t keep the photo.'); render(); } });
+  if (!licenseOk()) mountCapture('#lic', { kind: 'license', title: 'Photo of your license', sampleLabel: 'Use sample license', instant: { document_category: 'driver_license', expiry_iso: '2029-08-14' }, sample: () => photoLicense(), onPass: r => { S.license = r.pending ? { kind: 'Pending staff review (demo)', exp: new Date(now() + 86400e3).toISOString().slice(0, 10), pending: true, at: now() } : { kind: r.document_category === 'instruction_permit' ? 'Learner permit' : 'Driver license', exp: r.expiry_iso, at: now() }; save(); toast('License checked. SCoot didn’t keep the photo.'); render(); } });
 };
 
 PAGES.home = () => {
@@ -340,7 +345,7 @@ PAGES.home = () => {
   setTimeout(() => {
     if (!mapEl.isConnected || mapObj) return;
     mapObj = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView([34.0213, -118.2865], 16);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(mapObj);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(mapObj); mapObj.attributionControl.setPrefix(false);   // credit links open in a new tab, never away from the app
     for (const r of RACKS) {
       const n = S.vehicles.filter(v => v.rack === r.id && ready(v)).length, isHome = r.id === me.dorm;
       const icon = L.divIcon({ className: '', iconSize: [40, 40], iconAnchor: [20, 40], html: `<div class="pin ${isHome ? 'home' : n ? 'has' : 'none'} "><span>${isHome ? '★' : n}</span></div>` });
@@ -364,7 +369,7 @@ PAGES.v = id => {
    <div class="pad"><div class="sec">Owner</div><div class="card owner"><div class="avatar" style="background:${v.owner.color}">${esc(v.owner.initials)}</div><div class="grow"><div class="b">${esc(v.owner.name)} · lives in ${esc(v.owner.dorm)}</div><div class="xs muted">USC verified · lends it until ${t(v.until)} today</div></div><span class="chip green">✓ NetID</span></div>
    <div class="sec">Round trip</div><div class="card row"><div style="font-size:26px">🔁</div><div class="grow"><div class="b">${esc(r.name)}</div><div class="xs muted">Pick up here, bring it back here. ${esc(r.sub)}.</div></div></div>
    ${lowBatt ? `<div class="note red" style="margin-top:12px">🔋 Battery is ${v.battery}%. ${rc.label} scooters need ${rc.min}% to start a rental. The owner has been asked to charge it.</div>` : ''}
-   <div class="sec">Price, set by ${esc(v.owner.name)}</div><div class="card"><div class="kv"><span>Start: first 2 hours + 2 miles</span><b>${money(rt.base)}</b></div><div class="kv"><span>Each extra hour</span><span>${money(rt.hr)}</span></div><div class="kv"><span>Each extra mile</span><span>${money(rt.mi)}</span></div><div class="kv"><span>Curfew: back at ${esc(r.name)} by</span><b>${t(curfew)}</b></div><div class="kv"><span>Miss the curfew</span><span>$10.00</span></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div><div class="kv xs"><span>${esc(v.owner.name)} gets</span><span>${kitLeft(v) > 0 ? '70% (85% once the lock is paid off)' : '85% (lock paid off)'}</span></div></div>
+   <div class="sec">Price, set by ${esc(v.owner.name)}</div><div class="card"><div class="kv"><span>Start: first 2 hours + 2 miles</span><b>${money(rt.base)}</b></div><div class="kv"><span>Each extra hour</span><span>${money(rt.hr)}</span></div><div class="kv"><span>Each extra mile</span><span>${money(rt.mi)}</span></div><div class="kv"><span>Curfew: back at ${esc(r.name)} by</span><b>${t(curfew)}</b></div><div class="kv"><span>Miss the curfew</span><span>$15.00</span></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div></div>
    <p class="xs muted" style="margin:10px 2px">Parkside to the Village gym and back (1.4 mi, 1½ h): ${money(rt.base)}. To a 4-hour lecture and back (about 4 h 20 min): ${money(rt.base + 3 * rt.hr)}. Distance comes from your phone’s GPS.</p>
    <div style="height:20px"></div></div></div>
    <div class="foot">${busy ? `<button class="btn dark" onclick="go('#/ride')">You already have a rental →</button>` : e && v.type === 'scooter' && !licenseOk() ? `<button class="btn" onclick="go('#/onboard')">Verify license to ride scooters</button>` : `<button class="btn" ${canBook && !lowBatt ? '' : 'disabled'} onclick="A.book('${id}')">Book · ${money(rt.base)} to start</button>`}</div></div>`;
@@ -395,11 +400,11 @@ PAGES.pickup = () => {
   } else {
     body = `<div style="text-align:center"><div class="lockbig" id="lk">${ICON.lock}</div><div class="h3">${esc(v.name)} · lock ${v.id.toUpperCase()}</div><p class="sm muted" style="margin:6px 0 0">In the pilot, your phone gets a Bluetooth key for this padlock. It works until you end the rental (curfew ${t(b.end)}). This demo simulates the lock.</p></div>
      <div class="card" style="margin-top:16px"><div class="kv"><span>Start battery</span><b>${e ? b.pickupBattery + '%' : '—'}</b></div><div class="kv"><span>Before photo</span><b style="color:var(--ok)">Saved ✓</b></div><div class="kv"><span>Back at ${esc(r.name)} by</span><b>${t(b.end)}</b></div></div>`;
-    foot = `<button class="btn gold" onclick="A.unlock()">🔓 Unlock with Bluetooth</button><button class="btn ghost sm" style="margin-top:8px" onclick="A.unlock(true)">Demo unlock (no lock nearby)</button>`;
+    foot = `<button class="btn gold" onclick="A.unlock()">🔓 Unlock with Bluetooth</button>`;
   }
   app.innerHTML = `<div class="view">${topbar('Pick up ' + esc(v.name))}<div class="scroll pad">${bar}${body}<div style="height:16px"></div></div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   if (step === 'battery') mountCapture('#cap', { kind: 'battery', title: 'Battery display', sampleLabel: 'Use demo photo', sample: () => photoDisplay(v.battery), onPass: r => A.pickBattery(r) });
-  if (step === 'condition') mountCapture('#cap', { kind: 'parking', title: 'Whole vehicle at the rack', sampleLabel: 'Use demo photo', sample: () => photoRack(v, b.rack), keep: true, onPass: (r, img) => A.pickCondition(img) });
+  if (step === 'condition') mountCapture('#cap', { kind: 'parking', lenient: true, title: 'Whole vehicle at the rack', sampleLabel: 'Use demo photo', sample: () => photoRack(v, b.rack), keep: true, onPass: (r, img) => A.pickCondition(img) });
 };
 
 PAGES.ride = () => {
@@ -409,7 +414,7 @@ PAGES.ride = () => {
   const est = e ? estBatt(b, v) : null, rangeLeft = e ? Math.max(0, (est - 5) / drainOf(v)) : 0, rt = b.rate || RATE0;
   const homeMi = miles(here, r), walkMin = Math.round(homeMi / 3 * 60);
   app.innerHTML = `<div class="view ride">${topbar('Your ride', false, `<span class="chip" style="background:#2e2522;color:#fff;box-shadow:none">${esc(v.name)}</span>`)}
-  <div class="scroll pad"><div class="ridecard"><div class="xs muted b" id="lbl">CURFEW · back by ${t(b.end)}</div><div class="timer" id="tm">--:--</div>
+  <div class="scroll pad"><div class="ridecard"><div class="xs muted b" id="lbl">FREE TIME LEFT</div><div class="timer" id="tm">--:--</div><div class="sm" id="cur" style="margin-top:8px;opacity:.8">Curfew: back at ${esc(r.name)} by ${t(b.end)}</div>
    <div class="row" style="margin-top:10px;gap:8px"><span class="chip" style="background:${parked ? '#3b2f12' : '#123b22'};color:${parked ? 'var(--gold)' : '#7CFC9a'};box-shadow:none">${parked ? '🔒 Locked at ' + esc(here.name) : '🛴 Riding'}</span><span class="xs muted" id="late"></span></div></div>
    ${e ? `<div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">BATTERY ESTIMATE</div><div style="font-size:26px;font-weight:900" id="best">~${est}%</div></div><div style="text-align:right" class="xs muted">${b.pickupBattery}% ${b.battSrc === 'old' ? '(owner’s last reading)' : 'in the pickup photo'}<br>− <span id="bmi">${rideMiles(b).toFixed(1)}</span> mi × ${drainOf(v).toFixed(1)}% per mile</div></div>
      <div class="gauge"><i id="bgauge" style="width:${est}%"></i><u style="left:${RETURN_FLOOR}%"></u></div><div class="xs muted" style="margin-top:8px" id="brange">Estimated range left: about ${Math.round(rangeLeft)} mi · home rack is ${homeMi.toFixed(1)} mi away</div>${rangeLeft < homeMi + 0.5 || est < 30 ? `<div class="note red" style="margin-top:10px">Low battery. Head back to ${esc(r.name)} now. If it dies, you kick it home without the motor.</div>` : ''}</div>` : ''}
@@ -421,9 +426,11 @@ PAGES.ride = () => {
    <div style="height:12px"></div></div>
   <div class="foot" style="background:none"><button class="btn gold" onclick="A.startReturn()">Return to ${esc(r.name)}</button></div>${tabs('home')}</div>`;
   const upd = () => {
-    const left = b.end - now(), el = $('#tm'); if (!el) return;
-    el.textContent = (left < 0 ? '+' : '') + clock(left); el.classList.toggle('late', left < 0);
-    if (left < 0) { $('#lbl').textContent = 'CURFEW MISSED · was ' + t(b.end); $('#late').textContent = 'curfew fee $10'; }
+    const left = b.end - now(), free = (b.startedAt || now()) + PRICING.inclHours * HOUR - now(), el = $('#tm'); if (!el) return;
+    // big number: free time left in the start price, then extra time; small line: the curfew
+    el.textContent = (free < 0 ? '+' : '') + clock(free); el.classList.toggle('extra', free < 0); el.classList.toggle('late', left < 0);
+    $('#lbl').textContent = free >= 0 ? 'FREE TIME LEFT' : `EXTRA TIME · ${money(rt.hr)} per started hour`;
+    $('#cur').textContent = left >= 0 ? `Curfew: back at ${r.name} by ${t(b.end)} · ${clock(left)} left` : `Curfew missed (was ${t(b.end)}): $15 fee`;
     if (e && $('#best')) { const ne = estBatt(b, v); $('#best').textContent = '~' + ne + '%'; $('#bgauge').style.width = ne + '%'; $('#bmi').textContent = rideMiles(b).toFixed(1); $('#brange').textContent = `Estimated range left: about ${Math.round(Math.max(0, (ne - 5) / drainOf(v)))} mi · home rack is ${homeMi.toFixed(1)} mi away`; }
     meter(); const bl = bill(b, now()); $('#cost').textContent = money(bl.total); $('#usage').innerHTML = `${dur(bl.hours * HOUR)} · ${bl.mi.toFixed(1)} mi${b.gpsUsed ? '' : ' (est. from racks)'}<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'} · ${bl.xm ? '+' + bl.xm + ' mi' : 'within 2 mi'}`;
   };
@@ -431,10 +438,10 @@ PAGES.ride = () => {
   const mmEl = $('#mm');
   setTimeout(() => {
     if (!mmEl.isConnected || mapObj) return;
-    mapObj = L.map(mmEl, { zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false }).setView([(here.lat + r.lat) / 2, (here.lng + r.lng) / 2], 15);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj);
+    mapObj = L.map(mmEl, { zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false }).setView([(here.lat + r.lat) / 2, (here.lng + r.lng) / 2], 17);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(mapObj); mapObj.attributionControl.setPrefix(false);
     L.marker([r.lat, r.lng], { icon: L.divIcon({ className: '', iconSize: [40, 40], iconAnchor: [20, 40], html: '<div class="pin home"><span>★</span></div>' }) }).addTo(mapObj);
-    if (b.at && b.at !== b.rack) { L.marker([here.lat, here.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18] }) }).addTo(mapObj); L.polyline([[here.lat, here.lng], [r.lat, r.lng]], { color: '#FFCC00', dashArray: '6 8', weight: 3 }).addTo(mapObj); mapObj.fitBounds([[here.lat, here.lng], [r.lat, r.lng]], { padding: [30, 30] }); }
+    if (b.at && b.at !== b.rack) { L.marker([here.lat, here.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18] }) }).addTo(mapObj); L.polyline([[here.lat, here.lng], [r.lat, r.lng]], { color: '#FFCC00', dashArray: '6 8', weight: 3 }).addTo(mapObj); mapObj.fitBounds([[here.lat, here.lng], [r.lat, r.lng]], { padding: [16, 16], maxZoom: 17 }); }
   });
 };
 
@@ -508,11 +515,11 @@ PAGES.garage = () => {
    <div class="sec">This week</div><div class="card"><div class="row"><div class="grow"><div class="big-earn">${money(wk)}</div><div class="xs muted">${m.history.length + (rn ? 1 : 0)} rentals · you keep ${Math.round(ownerShare(m) * 100)}%</div></div><button class="btn sm gold" style="width:auto;padding:10px 14px" onclick="go('#/wallet')">Cash out</button></div>
     <div class="bars">${m.week.map((x, i) => `<div><i class="${x === Math.max(...m.week) && x > 0 ? 'hi' : ''}" style="height:${Math.max(4, x / maxW * 70)}px"></i>${D[i]}</div>`).join('')}</div></div>
    <div class="sec">Your prices</div><div class="card col"><div class="row2" style="grid-template-columns:1fr 1fr 1fr"><div class="field" style="margin:0;min-width:0"><label for="rate-base">Start (2 h + 2 mi)</label><input id="rate-base" style="width:100%;box-sizing:border-box" type="number" min="1" max="50" step="0.5" value="${rateOf(m).base}" onchange="A.rate('base',this.value)"></div><div class="field" style="margin:0;min-width:0"><label for="rate-hr">Extra hour</label><input id="rate-hr" style="width:100%;box-sizing:border-box" type="number" min="0" max="20" step="0.5" value="${rateOf(m).hr}" onchange="A.rate('hr',this.value)"></div><div class="field" style="margin:0;min-width:0"><label for="rate-mi">Extra mile</label><input id="rate-mi" style="width:100%;box-sizing:border-box" type="number" min="0" max="20" step="0.5" value="${rateOf(m).mi}" onchange="A.rate('mi',this.value)"></div></div>
-    <div class="xs muted">Every rental starts with 2 hours and 2 miles for your start price. After that, renters pay your price for each started extra hour and each started extra mile. You keep 70% until your lock is paid off, then 85%. Most owners charge $5, $2 and $2.</div></div>
+    <div class="xs muted">Every rental starts with 2 hours and 2 miles for your start price. After that, renters pay your price for each started extra hour and each started extra mile. You keep 70% until your lock is paid off, then 90%. Most owners charge $5, $2 and $2.</div></div>
    <div class="sec">When it's rentable</div><div class="card col"><div class="days">${D.map((d, i) => `<button class="${m.days[i] ? 'on' : ''}" aria-pressed="${!!m.days[i]}" aria-label="${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i]}" onclick="A.day(${i})">${d}</button>`).join('')}</div>
     <div class="row2"><div class="field" style="margin:0"><label for="win-from">From</label><input id="win-from" type="time" value="${m.from}" onchange="A.win('from',this.value)"></div><div class="field" style="margin:0"><label for="win-to">Back by</label><input id="win-to" type="time" value="${m.to}" onchange="A.win('to',this.value)"></div></div>
-    <div class="xs muted">Your "back by" time is the renter’s curfew (never overnight). Miss it and they pay $10. You can pause renting any time; current renters still finish.</div></div>
-   <div class="sec">Your lock, paid off by rentals</div><div class="card"><div class="row"><div class="grow"><div class="b">${money(Math.min(KIT, m.kitPaid || 0))} of $${KIT} paid off</div><div class="xs muted">15% of each fare pays off your lock kit, never your own money. ${kitLeft(m) > 0 ? 'When it’s paid off, your share goes from 70% to 85%.' : 'Paid off: you now keep 85%.'}</div></div><span class="chip ${kitLeft(m) > 0 ? 'gold' : 'green'}">${kitLeft(m) > 0 ? '70%' : '85%'}</span></div><div class="gauge" style="margin-top:10px;background:#efe6df"><i style="width:${Math.min(100, (m.kitPaid || 0) / KIT * 100)}%"></i></div></div>
+    <div class="xs muted">Your "back by" time is the renter’s curfew (never overnight). Miss it and they pay $15. You can pause renting any time; current renters still finish.</div></div>
+   <div class="sec">Your lock, paid off by rentals</div><div class="card"><div class="row"><div class="grow"><div class="b">${money(Math.min(KIT, m.kitPaid || 0))} of $${KIT} paid off</div><div class="xs muted">15% of each fare pays off your lock kit, never your own money. ${kitLeft(m) > 0 ? 'When it’s paid off, your share goes from 70% to 90%.' : 'Paid off: you now keep 90%.'}</div></div><span class="chip ${kitLeft(m) > 0 ? 'gold' : 'green'}">${kitLeft(m) > 0 ? '70%' : '90%'}</span></div><div class="gauge" style="margin-top:10px;background:#efe6df"><i style="width:${Math.min(100, (m.kitPaid || 0) / KIT * 100)}%"></i></div></div>
    <div class="sec">Your starter kit</div><div class="kit">
     <div class="card"><div class="b sm">🔐 Smart lock</div><div class="xs muted">${k.lockClosed ? 'Closed' : 'Open'} · battery ${k.lockBatt}%</div></div>
     <div class="card"><div class="b sm">📍 Ride log</div><div class="xs muted">Every unlock and lock is logged</div></div>
@@ -528,7 +535,7 @@ PAGES.wallet = () => {
    <div class="card" style="background:linear-gradient(140deg,#990000,#5c0000);color:#fff"><div class="xs b" style="opacity:.75">EARNINGS BALANCE</div><div class="big-earn" style="margin:4px 0 12px">${money(m.balance)}</div><button class="btn gold sm" onclick="A.cashout()">Cash out to bank (test mode)</button></div>
    <div class="sec">Pay with</div><div class="card row"><div style="font-size:22px">💳</div><div class="grow"><div class="b">Visa •••• 4242</div><div class="xs muted">Simulated card · no real charges · holds released after each return</div></div></div>
    <div class="sec">Activity</div><div class="card">${[...S.trips.map(x => ({ d: 'Ride · ' + x.name, a: -(x.price + x.late), ago: t(x.at) })), ...S.wallet].map(x => `<div class="hist"><div class="grow"><div class="b sm">${esc(x.d)}</div><div class="xs muted">${esc(x.ago)}</div></div><div class="b sm" style="color:${x.a < 0 ? 'var(--ink)' : 'var(--ok)'}">${x.a < 0 ? '−' + money(-x.a) : '+' + money(x.a)}</div></div>`).join('') || '<p class="muted sm">No activity yet.</p>'}</div>
-   <div class="sec">Where the money goes</div><div class="card sm ink2" style="line-height:1.5">Owners keep <b>70%</b> of every rental. Of the other 30%, half pays off the owner’s $86 lock kit and half pays card fees and a safety fund for theft and damage. <b>Once the lock is paid off, the owner keeps 85%.</b> SCoot isn't trying to profit, so there's no unlock fee and no per-minute meter.</div>
+   <div class="sec">Where the money goes</div><div class="card sm ink2" style="line-height:1.5">Owners keep <b>70%</b> of every rental. Of the other 30%, half pays off the owner’s $86 lock kit and half pays card fees and a safety fund for theft and damage. <b>Once the lock is paid off, the owner keeps 90%.</b> SCoot isn't trying to profit, so there's no unlock fee and no per-minute meter.</div>
    <div style="height:16px"></div></div>${tabs('wallet')}</div>`;
 };
 
@@ -558,7 +565,7 @@ PAGES.rules = () => {
   <li><b>Photos at pickup and return.</b> AI reads the battery and checks parking, lock and new damage. Unclear photos go to a person, never an automatic fine.</li>
   <li><b>Start with enough charge.</b> Long-range scooters need 40% to start, medium 50%, short 60%.</li>
   <li><b>Battery died?</b> Kick it home to the rack without the motor. It’s still faster than walking. Report it and your curfew moves back 30 minutes.</li>
-  <li><b>Curfew:</b> the owner’s back-by time, shown before you book. Miss it and there’s a one-time $10 fee. After 24 hours missing, it’s treated as stolen.</li>
+  <li><b>Curfew:</b> the owner’s back-by time, shown before you book. Miss it and there’s a one-time $15 fee. After 24 hours missing, it’s treated as stolen.</li>
   <li><b>Lock to a rack</b> every time you leave it. No passengers, no lending your booking to a friend, no overnight rentals.</li>
   <li><b>Walk-only zones:</b> walk it through Hahn Plaza and campus intersections. DPS tickets are on you.</li>
   <li><b>License:</b> e-scooters need a driver's license or learner's permit (CA Vehicle Code 21235). Helmet required under 18.</li></ol><div style="height:20px"></div></div></div>`;
@@ -583,7 +590,7 @@ function mountCapture(sel, o) {
      <div class="row2" style="margin-top:10px"><button class="btn sm" id="c-take">📷 ${img ? 'Retake' : 'Take photo'}</button><button class="btn ghost sm" id="c-demo">${esc(o.sampleLabel)}</button></div>
      <div id="c-res" aria-live="polite" style="margin-top:12px">${res || ''}</div>`;
     $('#c-take').onclick = async () => { if (busy) return; const d = await pickPhoto(); if (d) { img = d; run(); } };
-    $('#c-demo').onclick = () => { if (busy) return; img = toB64(o.sample()); run(); };
+    $('#c-demo').onclick = () => { if (busy) return; if (o.instant) return o.onPass(o.instant); img = toB64(o.sample()); run(); };   // the sample license always passes
   };
   const run = async () => {
     busy = true; tries++;
@@ -595,7 +602,9 @@ function mountCapture(sel, o) {
       r = { ok: p.ok, error: p.error, ms: Math.max(p.ms, d?.ms || 0), result: p.result, damage: d && d.ok ? d.result : null, damageFailed: !!o.before && !(d && d.ok), model: p.model };
     } else r = await ai(o.kind, [img]);
     busy = false; if (!still()) return;
-    const v = verdict(o.kind, r);
+    let v = verdict(o.kind, r);
+    if (o.lenient && r.ok && r.result && r.result.view_quality === 'usable' && !r.result.instruction_text_seen) v = { ...v, cls: 'ok', title: 'Before photo saved', pass: true };
+    if (v.pass && o.kind === 'license') return o.onPass(v.data || {}, img);   // no extra Continue for a license
     draw(`<div class="ai ${v.cls}"><div class="head"><span class="badge">AI</span>${esc(v.title)}<span class="grow"></span><span class="xs muted">${r.ms ? (r.ms / 1000).toFixed(1) + 's' : ''}${/llama/i.test(r.model || '') ? ' · backup model' : ''}</span></div><ul>${v.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
       ${r.result?.instruction_text_seen ? '<div class="note red" style="margin-top:8px">⚠ The photo contained text trying to instruct the AI. It was ignored and flagged.</div>' : ''}</div>
       ${v.pass ? `<button class="btn" style="margin-top:12px" id="c-ok">${o.kind === 'battery' ? 'Matches what I see · Continue' : 'Continue'}</button>`
@@ -618,7 +627,8 @@ function verdict(kind, r) {
     return valid ? { cls: 'ok', title: 'License looks valid', lines: [`${x.document_category === 'instruction_permit' ? 'Learner permit' : 'Driver license'} · ${x.issuing_jurisdiction || 'unknown state'}`, `Expires ${x.expiry_iso}`, 'Only type, state and expiry are returned. The image is processed by the AI provider and not stored by SCoot. This doesn’t prove who you are.'], pass: true, data: x }
       : { cls: 'bad', title: x.expiry_iso ? 'License expired or not accepted' : "Couldn't read the expiry date", lines: ['Retake in good light, or a staff member can check it in person.'], pass: false, data: x };
   }
-  const p = x, good = p.view_quality === 'usable' && p.upright === 'yes' && p.walkway_obstructed === 'no' && p.frame_and_rack_path_visible === 'yes' && p.shackle_appears_closed === 'yes' && p.rack_label_visible === 'yes' && !(kind === 'return' && r.damage && r.damage.instruction_text_seen);
+  // A parking photo fails only on something clearly wrong; unclear details are listed but don't block.
+  const p = x, good = p.view_quality !== 'retake' && p.upright !== 'no' && p.walkway_obstructed !== 'yes' && p.frame_and_rack_path_visible !== 'no' && p.shackle_appears_closed !== 'no' && !(kind === 'return' && r.damage && r.damage.instruction_text_seen);
   const lines = [`Upright: ${p.upright} · walkway blocked: ${p.walkway_obstructed}`, `Lock through frame + rack: ${p.frame_and_rack_path_visible} · shackle closed: ${p.shackle_appears_closed}`, `Rack sticker visible: ${p.rack_label_visible}`, ...(p.corrective_instructions || []).slice(0, 2)];
   if (kind === 'return') {
     const d = r.damage, n = d ? (d.new_visible_differences || []).length : 0;
@@ -626,7 +636,7 @@ function verdict(kind, r) {
     lines.push(!d ? 'Damage not compared (check failed). A person will review.' : d.comparable !== 'yes' || (d.not_comparable || []).length ? `Only partly comparable${(d.not_comparable || []).length ? ' (' + d.not_comparable.join(', ') + ')' : ''}. A person will review.`
       : n ? `Possible new damage: ${d.new_visible_differences.map(z => z.description).join('; ')} (a person will review)` : 'No new damage compared with the pickup photo.');
   }
-  return { cls: good ? 'ok' : 'warn', title: good ? (kind === 'return' ? 'Parked, locked, checked' : 'Looks good') : [p.upright, p.walkway_obstructed, p.frame_and_rack_path_visible, p.shackle_appears_closed].includes('unknown') ? 'Not sure: retake or get a review' : 'Fix the parking', lines, pass: good, data: { ...p, damage: r.damage } };
+  return { cls: good ? 'ok' : 'warn', title: good ? (kind === 'return' ? 'Parked, locked, checked' : 'Looks good') : 'Fix the parking', lines, pass: good, data: { ...p, damage: r.damage } };
 }
 
 /* ---------- actions ---------- */
@@ -644,7 +654,7 @@ const A = window.A = {
     const v = S.vehicles.find(x => x.id === vid), curfew = Math.min(v.until, endOfDay()), rt = rateOf(v);
     modal(`<div class="h3" style="font-size:20px">Confirm ${esc(v.name)}</div><p class="sm muted">Round trip from ${esc(rack(v.rack).name)}</p>
      <div class="card"><div class="kv"><span>Start (2 hours + 2 miles)</span><b>${money(rt.base)}</b></div><div class="kv"><span>Extra hour / extra mile</span><span>${money(rt.hr)} / ${money(rt.mi)}</span></div><div class="kv"><span>Refundable hold</span><span>${money(HOLD[cls(v)])}</span></div><div class="kv"><span>Pick up within</span><span>10 minutes</span></div><div class="kv"><span>Curfew: back at ${esc(rack(v.rack).name)} by</span><b>${t(curfew)}</b></div></div>
-     <div class="note" style="margin:12px 0">Miss the curfew and it’s a one-time $10. If the battery dies, you kick it home without the motor. Still faster than walking.</div>
+     <div class="note" style="margin:12px 0">Miss the curfew and it’s a one-time $15. If the battery dies, you kick it home without the motor. Still faster than walking.</div>
      <button class="btn" onclick="A.confirm('${vid}')">Start for ${money(rt.base)} · simulated card</button>`);
   },
   confirm(vid) {
@@ -664,27 +674,15 @@ const A = window.A = {
     b.pickupBattery = r.percent; b.battSrc = old ? 'old' : 'photo'; if (!old) { v.battery = r.percent; v.battAt = now(); v.battSrc = 'photo'; } b.step = 'condition'; render();
   },
   pickCondition(img) { const b = S.booking; b.beforeImg = img; b.step = 'unlock'; render(); },
-  async unlock(demo) {
+  // The lock is simulated in this prototype; in the pilot this button sends the phone's Bluetooth key to the TTLock padlock.
+  async unlock() {
     if (pickupExpired()) return;
-    const b = S.booking, lk = $('#lk');
-    if (!demo && !navigator.bluetooth) return toast('This browser can’t talk to Bluetooth locks (iPhone Safari can’t). Use the demo unlock.');
-    lk.classList.add('busy');
-    let ok = false;
-    if (!demo) {
-      try {
-        const key = await (await fetch(API + '/key', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ vehicle: b.vid, until: Math.min(b.end, now() + 15 * MIN) }) })).json();
-        if (!key.ok) throw new Error(key.error === 'demo_only' ? 'real lock keys are off in this public demo (they need server-side bookings)' : 'no key');
-        const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SCoot' }], optionalServices: [LOCK_SVC] });
-        const ch = await (await (await dev.gatt.connect()).getPrimaryService(LOCK_SVC)).getCharacteristic(LOCK_CHR);
-        await ch.writeValue(new TextEncoder().encode(key.msg + '|' + key.sig)); ok = true; dev.gatt.disconnect();
-      } catch (e) { lk.classList.remove('busy'); return toast(e.name === 'NotFoundError' ? 'No lock picked. Use demo unlock.' : 'Lock not reachable: ' + e.message); }
-    } else { await new Promise(r => setTimeout(r, 1300)); ok = true; }
-    if (ok) {
-      lk.classList.remove('busy'); lk.classList.add('open'); toast(demo ? 'Demo unlock (no real lock). Ride safe! ✌' : 'Unlocked. Ride safe! ✌');
-      const v = S.vehicles.find(x => x.id === b.vid); v.status = 'rented';
-      b.phase = 'active'; b.startedAt = now(); b.lastTick = now(); if (!isE(v)) b.pickupBattery = null; save(); logLoc('unlock', b.rack);
-      setTimeout(() => go('#/ride'), 900);
-    }
+    const b = S.booking, lk = $('#lk'); if (b.phase !== 'booked') return;
+    lk.classList.add('busy'); await new Promise(r => setTimeout(r, 1100));
+    lk.classList.remove('busy'); lk.classList.add('open'); toast('Unlocked. Ride safe! ✌');
+    const v = S.vehicles.find(x => x.id === b.vid); v.status = 'rented';
+    b.phase = 'active'; b.startedAt = now(); b.lastTick = now(); if (!isE(v)) b.pickupBattery = null; save(); logLoc('unlock', b.rack);
+    setTimeout(() => go('#/ride'), 900);
   },
   parkPick(id) { S.parkPick = id; render(); },
   parkDone(id) { const b = S.booking; meter(); closeLeg(b, rack(b.at || b.rack), rack(id)); b.phase = 'parked'; b.at = id; S.parkPick = null; save(); logLoc('lock', id); toast('Locked at ' + rack(id).name + '. Your time keeps running.'); go('#/ride'); },
@@ -722,7 +720,7 @@ const A = window.A = {
     const M = {
       dead: `<div class="h3" style="font-size:20px">🔋 Battery died</div><p class="sm ink2">Kick it back to <b>${esc(r.name)}</b> without the motor: about ${mi.toFixed(1)} mi. Still faster than walking. If it isn’t safe to ride, walk it, or lock it at the nearest rack and report it so the operator collects it. Report it once and your <b>curfew moves back 30 minutes</b>.</p><div class="note red">If it's hot, smoking, leaking or won't roll, stop. Don't move it, step away, and call DPS (213) 740-4321.</div><div style="height:12px"></div><button class="btn" onclick="A.report('dead')">Report & move curfew 30 min</button>`,
       broken: `<div class="h3" style="font-size:20px">🛞 It broke on you</div><p class="sm ink2">Not your fault, so it's not your cost. Lock it to the nearest rack and tap below: we log where it is, end your rental there with a full refund, and ${esc(v.owner.name)} picks it up.</p><button class="btn" onclick="A.report('broken')">Lock here & end rental</button>`,
-      lock: `<div class="h3" style="font-size:20px">🔐 Lock trouble</div><p class="sm ink2">1. Stand within 2 m and turn Bluetooth on. 2. Try again. 3. Still stuck? Support can open it remotely or send someone (simulated in this demo). Once you report it, you aren’t charged extra time or the curfew fee.</p><button class="btn" onclick="A.report('lock')">Report lock trouble</button>`,
+      lock: `<div class="h3" style="font-size:20px">🔐 Lock trouble</div><p class="sm ink2">1. Stand within 2 m and turn Bluetooth on. 2. Try again. 3. Still stuck? Call ${esc(v.owner.name)}, the owner, at <b>${phoneOf(v.owner)}</b>. Support can also open it remotely. Once you report it, you aren’t charged extra time or the curfew fee.</p><a class="btn" href="tel:${phoneOf(v.owner).replace(/\D/g, '')}" style="text-decoration:none">📞 Call ${esc(v.owner.name)}</a><div style="height:8px"></div><button class="btn ghost" onclick="A.report('lock')">Report lock trouble</button>`,
       phone: `<div class="h3" style="font-size:20px">📵 Phone dying</div><p class="sm ink2">Your curfew is ${t(b.end)} and your home rack is ${esc(r.name)}. Lock it at a rack if you can; the pilot operator can help you finish. Once you report it, there’s no curfew fee. (This demo saves the rental only in this browser.)</p><button class="btn" onclick="A.report('phone')">Got it</button>`,
       full: `<div class="h3" style="font-size:20px">🅿 Home rack full</div><p class="sm ink2">Lock it to the nearest legal rack within 100 m of ${esc(r.name)} and report it. In the pilot, support approves the spot and tells ${esc(v.owner.name)} where it is. In this demo, finish the return as usual.</p><button class="btn" onclick="A.report('full')">Use nearby rack</button>`,
       stolen: `<div class="h3" style="font-size:20px">🚨 Stolen</div><p class="sm ink2">Don't chase anyone. Call DPS at <b>(213) 740-4321</b>. We send DPS the serial number, its DPS decal and the last unlock/lock location from the ride log. There’s no live tracker. If it was locked properly, you don’t pay for it.</p><a class="btn" href="tel:2137404321" style="text-decoration:none">Call DPS</a><div style="height:8px"></div><button class="btn ghost" onclick="A.report('stolen')">File report</button>`,
@@ -743,18 +741,17 @@ const A = window.A = {
     else toast('Report saved (support is simulated in this demo).');
     save(); go('#/ride');
   },
-  list() { S.mine.listed = !S.mine.listed; save(); render(); toast(S.mine.listed ? 'Traveler is rentable again' : 'Paused. Current rental still finishes.'); },
+  list() { S.mine.listed = !S.mine.listed; save(); render(); toast(S.mine.listed ? S.mine.name + ' is rentable again' : 'Paused. Current rental still finishes.'); },
   day(i) { S.mine.days[i] = S.mine.days[i] ? 0 : 1; render(); },
   rate(k, val) { const x = Math.round(parseFloat(val) * 2) / 2, lo = k === 'base' ? 1 : 0; if (!(x >= lo && x <= (k === 'base' ? 50 : 20))) { toast('Pick between ' + money(lo) + ' and ' + money(k === 'base' ? 50 : 20)); return render(); } S.mine.rate = { ...rateOf(S.mine), [k]: x }; save(); toast('Price saved: ' + money(x)); },
   win(k, val) { const w = { from: S.mine.from, to: S.mine.to, [k]: val }; if (!(w.from && w.to && w.from < w.to && w.to <= '23:00')) { toast('Pick a same-day window that ends by 11 PM.'); return render(); } S.mine[k] = val; save(); toast('Saved'); },
   addVehicle() { modal(`<div class="h3" style="font-size:20px">Add a scooter or bike</div><p class="sm ink2">We check the model is certified (UL 2272 / UL 2849) and not recalled, register it with DPS, and give you the starter kit at no cost (15% of your fares pays it off):</p><ul class="sm ink2" style="line-height:1.7"><li>TTLock smart padlock (opens with your phone)</li><li>ABUS hardened chain</li><li>Ride log from the renter’s phone</li><li>DPS registration decal</li></ul><button class="btn" onclick="closeModal();toast('Kit requested: pick up at the IRC front desk')">Request my kit</button>`); },
   cashout() { toast('Demo payout of ' + money(S.mine.balance) + ' recorded. No real money moved.'); S.wallet.unshift({ d: 'Cash out to bank', a: -S.mine.balance, ago: 'just now' }); S.mine.balance = 0; save(); render(); },
   ff(m) { S.skew = (S.skew || 0) + m * MIN; meter(); save(); toast('Clock moved ' + m + ' minutes ahead'); render(); },
-  ownerReturn() { const m = S.mine; if (!m.rental) return toast('Traveler is already home.'); const sp = split(m, 5); m.kitPaid = (m.kitPaid || 0) + sp.kit; m.rental.earn = sp.owner; m.history.unshift({ who: m.rental.renter, hrs: '1 h 10 m · 1.0 mi', earn: m.rental.earn, ago: 'just now', checks: 'Battery 38% · parked at IRC · no new damage' }); m.week[(new Date(now()).getDay() + 6) % 7] += m.rental.earn; m.balance += m.rental.earn; m.battery = 38; m.rental = null; save(); toast('Jordan returned Traveler to IRC. +' + money(m.history[0].earn)); go('#/garage'); },
-  reset() { if (!confirm('Reset all demo data?')) return; S = seed(); save(); go('#/welcome'); render(); },
+  ownerReturn() { const m = S.mine; if (!m.rental) return toast(m.name + ' is already home.'); const sp = split(m, 5); m.kitPaid = (m.kitPaid || 0) + sp.kit; m.rental.earn = sp.owner; m.history.unshift({ who: m.rental.renter, hrs: '1 h 10 m · 1.4 mi', earn: m.rental.earn, ago: 'just now', checks: 'Battery 38% · parked at IRC · no new damage' }); m.week[(new Date(now()).getDay() + 6) % 7] += m.rental.earn; m.balance += m.rental.earn; m.battery = 38; m.rental = null; save(); toast(m.history[0].who + ' returned ' + m.name + ' to ' + rack(m.rack).name + '. +' + money(m.history[0].earn)); location.hash === '#/garage' ? render() : go('#/garage'); },
+  reset() { if (!confirm('Reset all demo data?')) return; S.skew = dayClock(); S = seed(); save(); go('#/welcome'); render(); },
   logout() { S.user = null; save(); go('#/welcome'); },
 };
-const LOCK_SVC = '7a0e0001-6d1b-4c1f-9b1e-5243554f4e01', LOCK_CHR = '7a0e0002-6d1b-4c1f-9b1e-5243554f4e01';
 // Ride log: the renter's phone location at every unlock and lock (the lock itself has no GPS).
 function nearestRack(lat, lng) { let best = null, d = 1e9; for (const r of RACKS) { const m = miles({ lat, lng }, r); if (m < d) { d = m; best = r; } } return d < 0.12 ? best.name : lat.toFixed(4) + ', ' + lng.toFixed(4); }
 async function logLoc(kind, fallbackRack) {

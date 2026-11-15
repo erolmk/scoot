@@ -13,7 +13,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 input,select{font:inherit}
 
 /* ---------- desktop stage: explanation on the left, the phone pinned on the right ---------- */
-.stage{display:grid;grid-template-columns:minmax(0,600px) auto;justify-content:center;align-items:start;gap:56px;padding:20px 32px}
+.stage{display:grid;grid-template-columns:minmax(0,720px) auto;justify-content:center;align-items:start;gap:56px;padding:20px 32px}
 .explain{padding:28px 0 56px}
 .explain .brand{display:flex;align-items:center;gap:12px;margin-bottom:26px}
 .explain .brand b{font-size:22px;font-weight:900;letter-spacing:-.5px;display:block}
@@ -33,6 +33,37 @@ input,select{font:inherit}
 .lp-qa{margin:0}.lp-qa dt{font-weight:800;margin-top:10px;font-size:15.5px}.lp-qa dd{margin:2px 0 0}
 .lp-show{display:inline-block;margin:2px 0 0 4px;padding:4px 12px;border-radius:999px;background:var(--cardinal);color:#fff;font-size:13px;font-weight:700;vertical-align:baseline}
 .lp-show:hover{background:var(--cardinal-d)}
+.lp-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lp-case{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.lp-case h3{margin:0 0 4px;font-size:17px;letter-spacing:-.2px}
+.explain .lp-who{font-size:14px;margin:0 0 10px;color:var(--mute)}
+.lp-case .lp-steps li{font-size:14.5px;margin-bottom:8px}
+.explain .lp-total{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:15px;color:var(--ink)}
+.explain .lp-note{font-size:13.5px;margin:6px 0 0;color:var(--mute)}
+.lp-case .lp-show{margin:10px 0 0}
+@media (max-width:720px){.lp-cols{grid-template-columns:1fr}}
+.lp-play{display:inline-block;margin-top:12px;padding:9px 16px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:800}
+.lp-play:hover{background:#000}
+.explain .lp-now{background:#fff1bf;border-radius:8px;box-shadow:0 0 0 6px #fff1bf;transition:background .3s}
+/* demo player: cursor, click blocker and the time-passing clock, all inside the phone */
+.pl-cursor{position:absolute;left:0;top:0;z-index:10003;pointer-events:none;opacity:0;transition:transform .7s cubic-bezier(.3,.7,.2,1),opacity .25s;filter:drop-shadow(0 2px 3px #0007)}
+.pl-cursor.on{opacity:1}
+.pl-cursor svg{display:block}
+.pl-cursor .ring{position:absolute;left:-16px;top:-16px;width:32px;height:32px;border-radius:50%;border:3px solid var(--gold);opacity:0}
+.pl-cursor.tap .ring{animation:plTap .5s ease-out}
+@keyframes plTap{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(1.5)}}
+.pl-bar{position:absolute;left:0;display:flex;align-items:center;gap:10px;height:44px;padding:0 6px;border-radius:999px;background:var(--ink);color:#fff;font-size:13.5px;font-weight:650;visibility:hidden;box-shadow:0 8px 24px -10px #000a}
+.pl-bar.on{visibility:visible}
+.pl-bar button{width:34px;height:34px;border-radius:50%;background:#ffffff1f;color:#fff;font-size:13px;flex:none}
+.pl-bar button:hover{background:#ffffff38}
+#pl-say{flex:1;min-width:0;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pl-veil{position:absolute;inset:12px;border-radius:44px;z-index:10001;display:none}
+.pl-veil.on{display:block}
+.pl-clock{position:absolute;inset:12px;border-radius:44px;z-index:10002;background:#16110fe8;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;opacity:0;pointer-events:none;transition:opacity .3s}
+.pl-clock.on{opacity:1}
+.pl-clock .hand{transform-box:view-box;transform-origin:60px 60px}
+.pl-time{font-size:42px;font-weight:900;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.pl-cap{font-size:15px;opacity:.85;text-align:center;padding:0 34px;line-height:1.4}
 .explain .lp-real{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
 .phonewrap{position:sticky;top:20px}
 .phone{position:relative;width:390px;height:844px;border-radius:56px;background:#0d0b0a;padding:12px;transform-origin:top left;
@@ -47,7 +78,7 @@ input,select{font:inherit}
 .batt i{display:block;height:100%;width:80%;background:currentColor;border-radius:1.5px}
 .homebar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:#111;z-index:60;opacity:.85;pointer-events:none}
 
-@media (max-width:1040px){.stage{grid-template-columns:minmax(0,600px);gap:8px}.phonewrap{position:static;order:-1;justify-self:center}}
+@media (max-width:1100px){.stage{grid-template-columns:minmax(0,720px);gap:8px}.phonewrap{position:static;order:-1;justify-self:center}}
 @media (max-width:520px){
   .stage{padding:0;display:block}
   .explain{display:none}
@@ -214,7 +245,7 @@ input,select{font:inherit}
 .ride{background:var(--ink);color:#fff}
 .ride .top h2{color:#fff}
 .timer{font-size:64px;font-weight:900;letter-spacing:-3px;font-variant-numeric:tabular-nums;line-height:1}
-.timer.late{color:#ff6b6b}
+.timer.extra{color:var(--gold)}.timer.late{color:#ff6b6b}
 .ridecard{background:#231c19;border-radius:20px;padding:16px;color:#fff}
 .ridecard .muted{color:#a89e98}
 .ride .kv span:first-child{color:#c9bfb9}
@@ -242,7 +273,7 @@ input,select{font:inherit}
 .hist:last-child{border:0}
 
 /* ---------- misc ---------- */
-.toast{position:absolute;left:50%;bottom:120px;width:max-content;transform:translate(-50%,30px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-weight:650;font-size:14px;opacity:0;transition:all .25s;z-index:9999;max-width:340px;text-align:center;box-shadow:0 10px 30px -10px #000a}
+.toast{position:absolute;left:50%;bottom:120px;width:max-content;transform:translate(-50%,30px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-weight:650;font-size:14px;opacity:0;transition:all .25s;z-index:9999;max-width:340px;text-align:center;box-shadow:0 10px 30px -10px #000a;pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .modal-bg{position:absolute;inset:0;background:#0007;z-index:900;display:flex;align-items:flex-end;animation:fade .2s}
 .modal{background:var(--bg);width:100%;border-radius:26px 26px 0 0;padding:10px 20px 34px;max-height:88%;overflow:auto}

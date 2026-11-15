@@ -48,6 +48,6 @@ AI checks cost about $0.015 each through the provider; about 5 per rental (licen
 | Owner's lock kit payoff (15%) | $0.90 |
 | Card fees + safety fund (15%) | $0.90 |
 
-Card fees take about $0.47 of that last $0.90 and AI checks about $0.08, leaving about $0.35 a ride for support and the safety fund. Fares alone won't fund operations; the pilot is a grant-funded experiment. A kit is paid off after about 96 rentals; at pilot volume (about 8 rentals per vehicle a month) that's about a year, so the pilot grant funds the kits up front and rentals repay them afterward. Once a kit is paid off, the owner keeps 85%. If an owner leaves before that, the kit goes back to SCoot for the next owner.
+Card fees take about $0.47 of that last $0.90 and AI checks about $0.08, leaving about $0.35 a ride for support and the safety fund. Fares alone won't fund operations; the pilot is a grant-funded experiment. A kit is paid off after about 96 rentals; at pilot volume (about 8 rentals per vehicle a month) that's about a year, so the pilot grant funds the kits up front and rentals repay them afterward. Once a kit is paid off, the owner keeps 90%. If an owner leaves before that, the kit goes back to SCoot for the next owner.
 
 Rental fares (about $240 a month at 40 rentals of about $6; SCoot's 30% share is about $72, half of which pays off owners' lock kits) don't cover the pilot. It's a subsidized experiment, funded in stages: no real ride until insurance, rack permission, a named operator and a lock test are in place.

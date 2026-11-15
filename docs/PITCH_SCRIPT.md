@@ -16,7 +16,7 @@ Scooters at USC live on outdoor racks, and they get stolen: one evening in Febru
 We talked to twenty students. Six of eight scooter owners said they’d probably rent theirs out, and nine of twelve students without one said they’d probably use it. The other three don’t make the kind of commute that needs it. It’s stated interest; the pilot tests the real thing.
 
 ## Slide 5: deal (47 words)
-So we start with the owner. They get an eighty-six dollar smart padlock and hardened chain at no cost. No tracker: the renter’s phone logs where the lock opened and closed. Owners keep 70 percent; half of our 30 pays off their lock, then they keep 85.
+So we start with the owner. They get an eighty-six dollar smart padlock and hardened chain at no cost. No tracker: the renter’s phone logs where the lock opened and closed. Owners keep 70 percent; half of our 30 pays off their lock, then they keep 90.
 
 ## Slide 6: how (49 words)
 Every rental is a round trip: pick it up at the owner’s rack, lock it at any rack during class, and bring it back to the same rack, so scooters never drift across campus. Parkside to the Village gym and back is five dollars. Owners set their own prices.
