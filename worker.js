@@ -185,7 +185,7 @@ async function viaOpenRouter(kind, task, content, env) {
 
 // Backup when OpenRouter is down or out of credit: Cloudflare Workers AI vision model, same schema, same server-side validation.
 // The response names the model, and the app labels it as the backup.
-async function viaWorkersAI(kind, task, parts, env) {
+async function viaWorkersAI(kind, task, parts, env, retry = 1) {
   const model = '@cf/meta/llama-4-scout-17b-16e-instruct';
   try {
     const out = await env.AI.run(model, {
@@ -193,9 +193,10 @@ async function viaWorkersAI(kind, task, parts, env) {
       response_format: { type: 'json_schema', json_schema: task.schema }, max_tokens: 800,
     });
     const res = typeof out?.response === 'string' ? JSON.parse(out.response.replace(/^[^{]*/, '').replace(/[^}]*$/, '')) : out?.response;
-    if (!res || typeof res !== 'object') return json({ ok: false, error: 'no_result' }, 502);
+    if (!res || typeof res !== 'object') return retry ? viaWorkersAI(kind, task, parts, env, retry - 1) : json({ ok: false, error: 'no_result' }, 502);
     return answer(kind, task, model, res);
   } catch (e) {
+    if (retry) return viaWorkersAI(kind, task, parts, env, retry - 1);   // Workers AI sometimes drops one of two parallel calls
     return json({ ok: false, error: 'upstream', detail: String(e.message || e).slice(0, 120) }, 504);
   }
 }
