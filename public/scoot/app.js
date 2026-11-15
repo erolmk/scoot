@@ -25,7 +25,8 @@ function miles(a, b) { const R = 3958.8, r = x => x * Math.PI / 180; const dl = 
 const PRICING = { inclHours: 2, inclMiles: 2, curfewFee: 10 }, RATE0 = { base: 5, hr: 2, mi: 2 };
 const rateOf = v => v.rate || RATE0;
 const MIN_BOOK = 45 * MIN;                                   // need at least this long before the owner's curfew to book
-const rideMiles = b => b.gpsMiles > 0 ? b.gpsMiles : (b.miles || 0);
+const rideMiles = b => (b.miles || 0) + (b.legGps || 0);
+const closeLeg = (b, from, to) => { b.miles = (b.miles || 0) + ((b.legGps || 0) > 0.05 ? b.legGps : miles(from, to)); b.legGps = 0; };
 function bill(b, endTs) {
   const rt = b.rate || RATE0, t0 = b.startedAt || b.created, hours = Math.max(0, (endTs - t0) / HOUR), mi = rideMiles(b);
   const billH = b.waiveFrom ? Math.max(0, (Math.min(endTs, b.waiveFrom) - t0) / HOUR) : hours;   // no extra time after a reported incident
@@ -125,7 +126,7 @@ if (S.booking && ['active', 'returning'].includes(S.booking.phase) && navigator.
   navigator.permissions.query({ name: 'geolocation' }).then(p => { if (p.state === 'granted') gpsStart(); }).catch(() => { });
 // ponytail: demo data has fixed times; if the page is opened hours later, refresh vehicle times so rides are bookable again
 if (!S.seededAt) S.seededAt = Date.now();
-if (Date.now() - S.seededAt > 2 * HOUR && !S.booking) { const f = seed(); S.vehicles = f.vehicles; if (S.mine.rental) S.mine.rental = f.mine.rental; S.seededAt = Date.now(); S.skew = 0; }
+if (Date.now() - S.seededAt > 2 * HOUR && !S.booking) { const f = seed(); S.vehicles = f.vehicles.map(fv => { const v = S.vehicles.find(x => x.id === fv.id); return v ? { ...v, until: fv.until, status: v.status === 'booked' || v.status === 'rented' ? fv.status : v.status } : fv; }); if (S.mine.rental) S.mine.rental = f.mine.rental; S.seededAt = Date.now(); S.skew = 0; }
 
 /* ---------- toast + modal ---------- */
 let toastT;
@@ -268,7 +269,7 @@ PAGES.login = () => {
   app.innerHTML = `<div class="view sso"><div class="bar"><span>NetID sign-in</span><span class="xs" style="opacity:.8">DEMO · not a real USC page</span></div>
   <div class="scroll pad" style="padding-top:26px"><h2 style="margin:0 0 6px;letter-spacing:-.5px">Sign in</h2><p class="muted sm" style="margin:0 0 22px">Use your USC NetID. SCoot never sees your password; USC confirms you're a current student.</p>
   <div class="field"><label for="nid">USC NetID</label><input id="nid" autocapitalize="none" autocomplete="username" placeholder="ttrojan" value="ttrojan"></div>
-  <div class="field"><label for="pw">Password (demo)</label><input id="pw" type="password" autocomplete="current-password" value="fighton1880"></div>
+  <div class="field"><label for="pw">Password (demo, not checked or sent)</label><input id="pw" type="password" autocomplete="current-password" value="fighton1880"></div>
   <div class="field"><label for="dorm">Your residence</label><select id="dorm">${RACKS.filter(r => ['IRC', 'VILLAGE', 'BIRN', 'WEBB', 'MARKS', 'CARD'].includes(r.id)).map(r => `<option value="${r.id}">${r.name}</option>`).join('')}</select></div>
   <div id="duo"></div></div>
   <div class="foot"><button class="btn" id="go" onclick="A.login()">Sign in</button><p class="xs muted" style="text-align:center">Demo sign-in: no real USC credentials are checked or sent.</p></div></div>`;
@@ -280,7 +281,7 @@ PAGES.onboard = () => {
   <div class="scroll pad"><div class="steps"><i class="on"></i><i class="${L ? 'on' : ''}"></i></div>
   <div class="card col"><div class="row"><div class="h3 grow">1 · License check</div>${L ? (L.pending ? '<span class="chip gold">Review (demo)</span>' : '<span class="chip green">Checked</span>') : ''}</div>
    <p class="sm ink2" style="margin:0">California law (Vehicle Code 21235) requires a driver's license or learner's permit to ride a motorized scooter. Regular bikes don't need one. <b>Demo: use the sample license, not your real one.</b></p>
-   ${L ? `<div class="note green">✓ ${esc(L.kind)} · expires ${esc(L.exp)}. The photo was deleted right after the check.</div>` : `<div id="lic"></div>`}
+   ${licenseOk() ? `<div class="note green">✓ ${esc(L.kind)} · expires ${esc(L.exp)}. SCoot didn’t keep the photo.</div>` : `${L ? `<div class="note">${esc(L.kind)}: retake the check below to ride scooters.</div>` : ''}<div id="lic"></div>`}
   </div>
   <div class="card col" style="margin-top:12px"><div class="h3">2 · The SCoot deal</div>
    <ol class="rules sm" style="padding-left:18px;margin:4px 0">
@@ -292,7 +293,7 @@ PAGES.onboard = () => {
    <a class="link sm" href="#/rules">Read all the rules →</a></div><div style="height:16px"></div></div>
   <div class="foot"><button class="btn" ${L ? '' : 'disabled'} onclick="A.agree()">I agree · Let's ride</button>
   <button class="btn ghost sm" style="margin-top:8px" onclick="A.agree(true)">Skip license (bikes only for now)</button></div></div>`;
-  if (!L) mountCapture('#lic', { kind: 'license', title: 'Photo of your license', sampleLabel: 'Use sample license', sample: () => photoLicense(), onPass: r => { S.license = r.pending ? { kind: 'Pending staff review (demo)', exp: new Date(now() + 86400e3).toISOString().slice(0, 10), pending: true, at: now() } : { kind: r.document_category === 'instruction_permit' ? 'Learner permit' : 'Driver license', exp: r.expiry_iso, at: now() }; save(); toast('License verified. Photo deleted.'); render(); } });
+  if (!licenseOk()) mountCapture('#lic', { kind: 'license', title: 'Photo of your license', sampleLabel: 'Use sample license', sample: () => photoLicense(), onPass: r => { S.license = r.pending ? { kind: 'Pending staff review (demo)', exp: new Date(now() + 86400e3).toISOString().slice(0, 10), pending: true, at: now() } : { kind: r.document_category === 'instruction_permit' ? 'Learner permit' : 'Driver license', exp: r.expiry_iso, at: now() }; save(); toast('License checked. SCoot didn’t keep the photo.'); render(); } });
 };
 
 PAGES.home = () => {
@@ -402,7 +403,7 @@ PAGES.ride = () => {
     el.textContent = (left < 0 ? '+' : '') + clock(left); el.classList.toggle('late', left < 0);
     if (left < 0) { $('#lbl').textContent = 'CURFEW MISSED · was ' + t(b.end); $('#late').textContent = 'curfew fee $10'; }
     if (e && $('#best')) { const ne = estBatt(b, v); $('#best').textContent = '~' + ne + '%'; $('#bgauge').style.width = ne + '%'; $('#bmi').textContent = rideMiles(b).toFixed(1); $('#brange').textContent = `Estimated range left: about ${Math.round(Math.max(0, (ne - 5) / drainOf(v)))} mi · home rack is ${homeMi.toFixed(1)} mi away`; }
-    meter(); const bl = bill(b, now()); $('#cost').textContent = money(bl.total); $('#usage').innerHTML = `${dur(bl.hours * HOUR)} · ${bl.mi.toFixed(1)} mi<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'} · ${bl.xm ? '+' + bl.xm + ' mi' : 'within 2 mi'}`;
+    meter(); const bl = bill(b, now()); $('#cost').textContent = money(bl.total); $('#usage').innerHTML = `${dur(bl.hours * HOUR)} · ${bl.mi.toFixed(1)} mi${b.gpsUsed ? '' : ' (est. from racks)'}<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'} · ${bl.xm ? '+' + bl.xm + ' mi' : 'within 2 mi'}`;
   };
   upd(); tick = setInterval(upd, 1000);
   const mmEl = $('#mm');
@@ -595,10 +596,11 @@ function verdict(kind, r) {
     return valid ? { cls: 'ok', title: 'License looks valid', lines: [`${x.document_category === 'instruction_permit' ? 'Learner permit' : 'Driver license'} · ${x.issuing_jurisdiction || 'unknown state'}`, `Expires ${x.expiry_iso}`, 'Only type, state and expiry are returned. The image is processed by the AI provider and not stored by SCoot. This doesn’t prove who you are.'], pass: true, data: x }
       : { cls: 'bad', title: x.expiry_iso ? 'License expired or not accepted' : "Couldn't read the expiry date", lines: ['Retake in good light, or a staff member can check it in person.'], pass: false, data: x };
   }
-  const p = x, good = p.view_quality === 'usable' && p.upright === 'yes' && p.walkway_obstructed === 'no' && p.frame_and_rack_path_visible === 'yes' && p.shackle_appears_closed === 'yes';
+  const p = x, good = p.view_quality === 'usable' && p.upright === 'yes' && p.walkway_obstructed === 'no' && p.frame_and_rack_path_visible === 'yes' && p.shackle_appears_closed === 'yes' && p.rack_label_visible === 'yes' && !(kind === 'return' && r.damage && r.damage.instruction_text_seen);
   const lines = [`Upright: ${p.upright} · walkway blocked: ${p.walkway_obstructed}`, `Lock through frame + rack: ${p.frame_and_rack_path_visible} · shackle closed: ${p.shackle_appears_closed}`, `Rack sticker visible: ${p.rack_label_visible}`, ...(p.corrective_instructions || []).slice(0, 2)];
   if (kind === 'return') {
     const d = r.damage, n = d ? (d.new_visible_differences || []).length : 0;
+    if (d && d.instruction_text_seen) lines.push('The comparison photo contained instruction text. A person will review.');
     lines.push(!d ? 'Damage not compared (check failed). A person will review.' : d.comparable !== 'yes' || (d.not_comparable || []).length ? `Only partly comparable${(d.not_comparable || []).length ? ' (' + d.not_comparable.join(', ') + ')' : ''}. A person will review.`
       : n ? `Possible new damage: ${d.new_visible_differences.map(z => z.description).join('; ')} (a person will review)` : 'No new damage compared with the pickup photo.');
   }
@@ -663,15 +665,15 @@ const A = window.A = {
     }
   },
   parkPick(id) { S.parkPick = id; render(); },
-  parkDone(id) { const b = S.booking; meter(); b.miles = (b.miles || 0) + miles(rack(b.at || b.rack), rack(id)); b.phase = 'parked'; b.at = id; S.parkPick = null; save(); logLoc('lock', id); toast('Locked at ' + rack(id).name + '. Your time keeps running.'); go('#/ride'); },
+  parkDone(id) { const b = S.booking; meter(); closeLeg(b, rack(b.at || b.rack), rack(id)); b.phase = 'parked'; b.at = id; S.parkPick = null; save(); logLoc('lock', id); toast('Locked at ' + rack(id).name + '. Your time keeps running.'); go('#/ride'); },
   unpark() { const b = S.booking; meter(); b.phase = 'active'; save(); logLoc('unlock', b.at); toast('Unlocked. Your one-time key still works until ' + t(b.end)); render(); },
   startReturn() { const b = S.booking; meter(); b.phase = 'returning'; b.rstep = 'scan'; save(); go('#/return'); },
-  rscan() { const b = S.booking; b.arrivedAt = b.arrivedAt || now(); toast('Home rack ' + b.rack + '-01 matched ✓'); b.miles = (b.miles || 0) + miles(rack(b.at || b.rack), rack(b.rack)); b.at = b.rack; b.rstep = isE(S.vehicles.find(x => x.id === b.vid)) ? 'battery' : 'photo'; render(); },
+  rscan() { const b = S.booking; toast('Home rack ' + b.rack + '-01 matched ✓'); closeLeg(b, rack(b.at || b.rack), rack(b.rack)); b.at = b.rack; b.rstep = isE(S.vehicles.find(x => x.id === b.vid)) ? 'battery' : 'photo'; render(); },
   retBattery(r) { const b = S.booking; b.returnBattery = r.pending ? null : r.percent ?? null; b.rstep = 'photo'; if (r.percent != null && r.percent < RETURN_FLOOR) toast(`${r.percent}% is under ${RETURN_FLOOR}%. No fee, but plan for the trip home next time.`); render(); },
   retPhoto(res) {
     const b = S.booking, d = res.damage;
-    b.parkCheck = res.pending ? 'review' : 'ok';
-    b.damageCheck = res.pending || !d ? 'not compared' : (d.new_visible_differences || []).length ? 'flagged' : d.comparable !== 'yes' || (d.not_comparable || []).length ? 'not comparable' : 'none';
+    b.arrivedAt = now(); b.parkCheck = res.pending ? 'review' : 'ok';
+    b.damageCheck = res.pending || !d || d.instruction_text_seen ? 'not compared' : (d.new_visible_differences || []).length ? 'flagged' : d.comparable !== 'yes' || (d.not_comparable || []).length ? 'not comparable' : 'none';
     b.damage = b.damageCheck === 'flagged'; b.rstep = 'lock'; render();
   },
   rstep(s) { S.booking.rstep = s; render(); },
@@ -685,8 +687,8 @@ const A = window.A = {
       const est = isE(v) && b.pickupBattery != null ? estBatt(b, v) : null;
       if (est != null && b.returnBattery != null && b.battSrc !== 'old' && b.returnBattery < b.pickupBattery && bl.mi >= 0.5) v.drain = Math.min(15, Math.max(1, .7 * drainOf(v) + .3 * (b.pickupBattery - b.returnBattery) / bl.mi));
       const sp = split(v, bl.total); v.kitPaid = (v.kitPaid || 0) + sp.kit;
-      S.trips.unshift({ name: v.name, rack: rack(b.rack).name, owner: v.owner.name, bill: bl, price: bl.total - late, late, sp, kitPaid: v.kitPaid, hold: b.hold, b0: b.pickupBattery ?? null, b1: b.returnBattery ?? null, est, lowBatt: b.returnBattery != null && b.returnBattery < RETURN_FLOOR, damage: b.damage, held: b.parkCheck !== 'ok' || b.damageCheck !== 'none', vid: v.id, parkCheck: b.parkCheck || 'review', damageCheck: b.damageCheck || 'not compared', at: now(), logN: (b.log || []).length });
-      const hold = b.parkCheck !== 'ok' || b.damageCheck !== 'none';
+      S.trips.unshift({ name: v.name, rack: rack(b.rack).name, owner: v.owner.name, bill: bl, price: bl.total - late, late, sp, kitPaid: v.kitPaid, hold: b.hold, b0: b.pickupBattery ?? null, b1: b.returnBattery ?? null, est, lowBatt: b.returnBattery != null && b.returnBattery < RETURN_FLOOR, damage: b.damage, held: b.parkCheck !== 'ok' || b.damageCheck !== 'none' || (isE(v) && b.returnBattery == null), vid: v.id, parkCheck: b.parkCheck || 'review', damageCheck: b.damageCheck || 'not compared', at: now(), logN: (b.log || []).length });
+      const hold = b.parkCheck !== 'ok' || b.damageCheck !== 'none' || (isE(v) && b.returnBattery == null);
       v.status = hold ? 'review' : 'available'; if (b.returnBattery != null) { v.battery = b.returnBattery; v.battAt = now(); v.battSrc = 'photo'; } v.trips++;
       S.booking = null; save(); go('#/receipt');
     }, 900);
@@ -753,7 +755,7 @@ function gpsStart() {
   gpsWatch = navigator.geolocation.watchPosition(p => {
     const b = S.booking, c = { lat: p.coords.latitude, lng: p.coords.longitude, t: p.timestamp }; if (!b || !['active', 'returning'].includes(b.phase) || p.coords.accuracy > 30) return;
     if (gpsLast && miles(gpsLast, c) / 1.3 / Math.max(1 / 3600, (c.t - gpsLast.t) / 3600e3) > 25) return;   // faster than 25 mph: a bad fix
-    if (gpsLast) { const d = miles(gpsLast, c) / 1.3; if (d > 0.01) { b.gpsMiles = (b.gpsMiles || 0) + d; gpsLast = c; save(); } } else gpsLast = c;
+    if (gpsLast) { const d = miles(gpsLast, c) / 1.3; if (d > 0.01) { b.legGps = (b.legGps || 0) + d; b.gpsUsed = true; gpsLast = c; save(); } } else gpsLast = c;
   }, () => { }, { enableHighAccuracy: true, maximumAge: 5000 });
 }
 function gpsStop() { if (gpsWatch != null) navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null; gpsLast = null; }
