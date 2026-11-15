@@ -79,6 +79,9 @@ const RACKS = [
 ];
 const rack = id => RACKS.find(r => r.id === id);
 const ROUTES_BLOCKED = 'Hahn Plaza and campus intersections are walk-only zones (DPS tickets).';
+// Time saved: walking the ridden distance at 2 mph, minus the minutes actually spent riding (parked time doesn't count).
+const WALK_MPH = 2, walkMins = mi => mi / WALK_MPH * 60;
+const savedMins = b => Math.max(0, Math.round(walkMins(rideMiles(b)) - (b.rideMin || 0)));
 
 /* ---------- state ---------- */
 // Demo clock: outside 8 AM-8 PM the demo runs at 12:40 PM, so owners' hours look like a normal day.
@@ -423,13 +426,14 @@ PAGES.ride = () => {
   const v = S.vehicles.find(x => x.id === b.vid), r = rack(b.rack), e = isE(v);
   const parked = b.phase === 'parked', here = rack(b.at || b.rack);
   const est = e ? estBatt(b, v) : null, rangeLeft = e ? Math.max(0, (est - 5) / drainOf(v)) : 0, rt = b.rate || RATE0;
-  const homeMi = miles(here, r), walkMin = Math.round(homeMi / 3 * 60);
+  const homeMi = miles(here, r), walkMin = Math.round(walkMins(homeMi));
   app.innerHTML = `<div class="view ride">${topbar('Your ride', false, `<span class="chip" style="background:#2e2522;color:#fff;box-shadow:none">${esc(v.name)}</span>`)}
   <div class="scroll pad"><div class="ridecard"><div class="xs muted b" id="lbl">FREE TIME LEFT</div><div class="timer" id="tm">--:--</div><div class="sm" id="cur" style="margin-top:8px;opacity:.8">Curfew: back at ${esc(r.name)} by ${t(b.end)}</div>
    <div class="row" style="margin-top:10px;gap:8px"><span class="chip" style="background:${parked ? '#3b2f12' : '#123b22'};color:${parked ? 'var(--gold)' : '#7CFC9a'};box-shadow:none">${parked ? '🔒 Locked at ' + esc(here.name) : '🛴 Riding'}</span><span class="xs muted" id="late"></span></div></div>
    ${e ? `<div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">BATTERY ESTIMATE</div><div style="font-size:26px;font-weight:900" id="best">~${est}%</div></div><div style="text-align:right" class="xs muted">${b.pickupBattery}% ${b.battSrc === 'old' ? '(owner’s last reading)' : 'in the pickup photo'}<br>− <span id="bmi">${rideMiles(b).toFixed(1)}</span> mi × ${drainOf(v).toFixed(1)}% per mile</div></div>
      <div class="gauge"><i id="bgauge" style="width:${est}%"></i><u style="left:${RETURN_FLOOR}%"></u></div><div class="xs muted" style="margin-top:8px" id="brange">Estimated range left: about ${Math.round(rangeLeft)} mi · home rack is ${homeMi.toFixed(1)} mi away</div>${rangeLeft < homeMi + 0.5 || est < 30 ? `<div class="note red" style="margin-top:10px">Low battery. Head back to ${esc(r.name)} now. If it dies, you kick it home without the motor.</div>` : ''}</div>` : ''}
    <div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">COST SO FAR</div><div style="font-size:26px;font-weight:900" id="cost">${money(rt.base)}</div></div><div style="text-align:right" class="xs muted" id="usage"></div></div><div class="xs muted" style="margin-top:6px">${e ? `${money(rt.base)} covers 2 hours + 2 miles. Then ${money(rt.hr)} per extra hour, ${money(rt.mi)} per extra mile (${esc(v.owner.name)}’s prices).` : `${money(rt.base)} covers 2 hours. Then ${money(rt.hr)} per extra hour (${esc(v.owner.name)}’s price). Bikes have no mile charge.`}</div></div>
+   <div class="ridecard" style="margin-top:12px"><div class="row"><div class="grow"><div class="xs muted b">TIME SAVED VS WALKING</div><div style="font-size:26px;font-weight:900;color:#7CFC9a" id="saved">0 min</div></div><div style="text-align:right" class="xs muted" id="savedx"></div></div><div class="xs muted" style="margin-top:6px">Walking the same distance at 2 mph, minus your riding time. Distance is added each time you lock up.</div></div>
    <div class="ridecard" style="margin-top:12px"><div class="xs muted b" style="margin-bottom:8px">HOME RACK</div><div class="minimap" id="mm"></div>
     <div class="kv" style="margin-top:8px"><span>${esc(r.name)}</span><b>${parked && b.at !== b.rack ? homeMi.toFixed(1) + ' mi · ' + walkMin + ' min walk' : b.at === b.rack ? "you're here" : 'round trip'}</b></div><div class="xs muted">${ROUTES_BLOCKED}</div></div>
    <div class="ridecard" style="margin-top:12px"><div class="xs muted b" style="margin-bottom:4px">RIDE LOG</div>${(b.log || []).map(l => `<div class="kv"><span>${l.kind === 'unlock' ? '🔓 Unlocked' : '🔒 Locked'} · ${esc(l.place)}${l.gps ? '' : ' (rack, no GPS)'}</span><b>${t(l.t)}</b></div>`).join('') || '<div class="xs muted">Nothing yet.</div>'}<div class="xs muted" style="margin-top:4px">Your phone’s GPS location at every unlock and lock (or the rack you scanned, if GPS is off). In the pilot it’s kept for disputes and theft reports, never shown to the owner. This demo keeps it only in this browser.</div></div>
@@ -443,7 +447,8 @@ PAGES.ride = () => {
     $('#lbl').textContent = free >= 0 ? 'FREE TIME LEFT' : `EXTRA TIME · ${money(rt.hr)} per started hour`;
     $('#cur').textContent = left >= 0 ? `Curfew: back at ${r.name} by ${t(b.end)} · ${clock(left)} left` : `Curfew missed (was ${t(b.end)}): $15 fee`;
     if (e && $('#best')) { const ne = estBatt(b, v); $('#best').textContent = '~' + ne + '%'; $('#bgauge').style.width = ne + '%'; $('#bmi').textContent = rideMiles(b).toFixed(1); $('#brange').textContent = `Estimated range left: about ${Math.round(Math.max(0, (ne - 5) / drainOf(v)))} mi · home rack is ${homeMi.toFixed(1)} mi away`; }
-    meter(); const bl = bill(b, now()); $('#cost').textContent = money(bl.total); $('#usage').innerHTML = e ? `${dur(bl.hours * HOUR)} · ${bl.mi.toFixed(1)} mi${b.gpsUsed ? '' : ' (est. from racks)'}<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'} · ${bl.xm ? '+' + bl.xm + ' mi' : 'within 2 mi'}` : `${dur(bl.hours * HOUR)}<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'}`;
+    meter(); const bl = bill(b, now()); $('#cost').textContent = money(bl.total);
+    $('#saved').textContent = savedMins(b) + ' min'; $('#savedx').innerHTML = `Walking ${rideMiles(b).toFixed(1)} mi: ${Math.round(walkMins(rideMiles(b)))} min<br>Riding so far: ${Math.round(b.rideMin || 0)} min`; $('#usage').innerHTML = e ? `${dur(bl.hours * HOUR)} · ${bl.mi.toFixed(1)} mi${b.gpsUsed ? '' : ' (est. from racks)'}<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'} · ${bl.xm ? '+' + bl.xm + ' mi' : 'within 2 mi'}` : `${dur(bl.hours * HOUR)}<br>${bl.xh ? '+' + bl.xh + ' h' : 'within 2 h'}`;
   };
   upd(); tick = setInterval(upd, 1000);
   const mmEl = $('#mm');
@@ -493,7 +498,7 @@ PAGES.receipt = () => {
   const tr = S.trips[0]; if (!tr) return go('#/home');
   app.innerHTML = `<div class="view">${topbar('Trip complete', false)}<div class="scroll pad" style="text-align:center">
    <div class="success">${ICON.check}</div><h2 style="margin:6px 0 2px;letter-spacing:-.6px">Fight On! ✌</h2><p class="muted sm" style="margin:0 0 16px">${esc(tr.name)} is back at ${esc(tr.rack)}.</p>
-   <div class="card" style="text-align:left"><div class="kv"><span>Ride: ${tr.bill ? dur(tr.bill.hours * HOUR) + (tr.bill.timeOnly ? '' : ' · ' + tr.bill.mi.toFixed(1) + ' mi') : ''}</span><span></span></div><div class="kv"><span>Start (${tr.bill && tr.bill.timeOnly ? '2 hours' : '2 hours + 2 miles'})</span><span>${money(tr.bill ? tr.bill.rt.base : 0)}</span></div>
+   <div class="card" style="text-align:left"><div class="kv"><span>Ride: ${tr.bill ? dur(tr.bill.hours * HOUR) + (tr.bill.timeOnly ? '' : ' · ' + tr.bill.mi.toFixed(1) + ' mi') : ''}</span><span></span></div>${tr.walkMin != null ? `<div class="kv"><span>Time saved vs walking (2 mph)</span><b style="color:var(--ok)">${tr.saved} min</b></div><div class="kv xs"><span>Walking ${tr.bill.mi.toFixed(1)} mi: ${tr.walkMin} min · riding: ${tr.rideMin} min</span><span></span></div>` : ''}<div class="kv"><span>Start (${tr.bill && tr.bill.timeOnly ? '2 hours' : '2 hours + 2 miles'})</span><span>${money(tr.bill ? tr.bill.rt.base : 0)}</span></div>
     ${tr.bill && tr.bill.xh ? `<div class="kv"><span>Extra time: ${tr.bill.xh} h × ${money(tr.bill.rt.hr)}</span><span>${money(tr.bill.xh * tr.bill.rt.hr)}</span></div>` : ''}${tr.bill && tr.bill.xm ? `<div class="kv"><span>Extra distance: ${tr.bill.xm} mi × ${money(tr.bill.rt.mi)}</span><span>${money(tr.bill.xm * tr.bill.rt.mi)}</span></div>` : ''}
     ${tr.late ? `<div class="kv"><span>Curfew missed</span><span>${money(tr.late)}</span></div>` : `<div class="kv"><span>Back before curfew</span><span style="color:var(--ok)">$0.00</span></div>`}
     ${tr.lowBatt ? `<div class="kv"><span>Battery under ${RETURN_FLOOR}% (no fee, just a heads-up)</span><span>$0.00</span></div>` : ''}
@@ -722,7 +727,7 @@ const A = window.A = {
       const est = isE(v) && b.pickupBattery != null ? estBatt(b, v) : null;
       if (est != null && b.returnBattery != null && b.battSrc !== 'old' && b.returnBattery < b.pickupBattery && bl.mi >= 0.5) v.drain = Math.min(15, Math.max(1, .7 * drainOf(v) + .3 * (b.pickupBattery - b.returnBattery) / bl.mi));
       const sp = split(v, bl.total); v.kitPaid = (v.kitPaid || 0) + sp.kit;
-      S.trips.unshift({ name: v.name, rack: rack(b.rack).name, owner: v.owner.name, bill: bl, price: bl.total - late, late, sp, kitPaid: v.kitPaid, hold: b.hold, b0: b.pickupBattery ?? null, b1: b.returnBattery ?? null, est, lowBatt: b.returnBattery != null && b.returnBattery < RETURN_FLOOR, damage: b.damage, held: b.parkCheck !== 'ok' || b.damageCheck !== 'none' || (isE(v) && b.returnBattery == null), vid: v.id, parkCheck: b.parkCheck || 'review', damageCheck: b.damageCheck || 'not compared', at: now(), logN: (b.log || []).length });
+      S.trips.unshift({ name: v.name, rack: rack(b.rack).name, owner: v.owner.name, bill: bl, price: bl.total - late, late, sp, kitPaid: v.kitPaid, hold: b.hold, b0: b.pickupBattery ?? null, b1: b.returnBattery ?? null, est, lowBatt: b.returnBattery != null && b.returnBattery < RETURN_FLOOR, damage: b.damage, held: b.parkCheck !== 'ok' || b.damageCheck !== 'none' || (isE(v) && b.returnBattery == null), vid: v.id, parkCheck: b.parkCheck || 'review', damageCheck: b.damageCheck || 'not compared', at: now(), logN: (b.log || []).length, walkMin: Math.round(walkMins(bl.mi)), rideMin: Math.round(b.rideMin || 0), saved: savedMins(b) });
       const hold = b.parkCheck !== 'ok' || b.damageCheck !== 'none' || (isE(v) && b.returnBattery == null);
       v.status = hold ? 'review' : 'available'; if (b.returnBattery != null) { v.battery = b.returnBattery; v.battAt = now(); v.battSrc = 'photo'; } v.trips++;
       S.booking = null; save(); go('#/receipt');
@@ -731,7 +736,7 @@ const A = window.A = {
   clearReview(vid) { const v = S.vehicles.find(x => x.id === vid); if (v && v.status === 'review') v.status = 'available'; S.trips.forEach(t => { if (t.vid === vid) t.held = false; }); save(); render(); toast('Cleared by staff (demo). ' + (v ? v.name : '') + ' is rentable again.'); },
   stars(n) { S.trips[0].stars = n; save(); render(); toast('Thanks! ' + S.trips[0].owner + ' sees your rating.'); },
   problem(k) {
-    const b = S.booking, v = S.vehicles.find(x => x.id === b.vid), r = rack(b.rack), here = rack(b.at || b.rack), mi = miles(here, r), wm = Math.max(2, Math.round(mi / 3 * 60));
+    const b = S.booking, v = S.vehicles.find(x => x.id === b.vid), r = rack(b.rack), here = rack(b.at || b.rack), mi = miles(here, r), wm = Math.max(2, Math.round(walkMins(mi)));
     const M = {
       dead: `<div class="h3" style="font-size:20px">🔋 Battery died</div><p class="sm ink2">Kick it back to <b>${esc(r.name)}</b> without the motor: about ${mi.toFixed(1)} mi. Still faster than walking. If it isn’t safe to ride, walk it, or lock it at the nearest rack and report it so the operator collects it. Report it once and your <b>curfew moves back 30 minutes</b>.</p><div class="note red">If it's hot, smoking, leaking or won't roll, stop. Don't move it, step away, and call DPS (213) 740-4321.</div><div style="height:12px"></div><button class="btn" onclick="A.report('dead')">Report & move curfew 30 min</button>`,
       broken: `<div class="h3" style="font-size:20px">🛞 It broke on you</div><p class="sm ink2">Not your fault, so it's not your cost. Lock it to the nearest rack and tap below: we log where it is, end your rental there with a full refund, and ${esc(v.owner.name)} picks it up.</p><button class="btn" onclick="A.report('broken')">Lock here & end rental</button>`,

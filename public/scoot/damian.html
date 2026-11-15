@@ -50,17 +50,17 @@
       <div class="dm-tabs" role="tablist"><button id="tab-rent" class="on" role="tab" onclick="dm.tab('rent')">1 · Renting</button><button id="tab-lend" role="tab" onclick="dm.tab('lend')">2 · Lending his own</button></div></div>
     <div class="dm-grid">
       <div><div id="dm-map"></div>
-        <div class="dm-total" id="dm-total">One rental, about 2 h 45 min and 1.6 miles: <b>$5</b> start + <b>$2</b> for 1 extra hour = <b>$7</b>. No mile charge (under 2 miles). About 13 min of riding instead of 31 min of walking. Ethan keeps 90% ($6.30) because his scooter uses a key box; the other 10% covers card fees and the safety fund. Bikes are time only: no mile price.</div>
+        <div class="dm-total" id="dm-total">One rental, about 2 h 45 min and 1.6 miles: <b>$5</b> start + <b>$2</b> for 1 extra hour = <b>$7</b>. No mile charge (under 2 miles). About 13 min of riding instead of 48 min of walking at 2 mph: <b>about 34 min saved</b>. Ethan keeps 90% ($6.30) because his scooter uses a key box; the other 10% covers card fees and the safety fund. Bikes are time only: no mile price.<div id="dm-saved" style="margin-top:6px;color:#7CFC9a;font-weight:800"></div></div>
         <div class="dm-foot"><button onclick="dm.start(false)">↺ Start over (signed out)</button><button onclick="dm.start(true)">↺ Start over (signed in)</button></div></div>
       <div>
       <ol class="dm-list" id="part-rent" data-part="rent">
         <li><span class="tm">1:00 PM<small>his room</small></span><span>Signs in with his NetID, uses the sample license, taps <b>I agree</b>. Books <b>Trojan Express</b>, Ethan’s scooter at the Parkside rack: $5 for 2 hours + 2 miles, then $2 an hour and $2 a mile. Curfew 6:00 PM ($15 if he’s late).</span></li>
         <li><span class="tm">1:02<small>IRC rack</small></span><span>Scans the rack sticker. Battery photo: the AI reads <b>79%</b>. A “before” photo. The app shows the key box code <b>4819</b>: he takes Ethan’s key and taps <b>Start ride</b>.</span></li>
-        <li><span class="tm">1:03–1:08<small>riding</small></span><span>Rides to <b>Leavey Library</b>. <span class="dist">0.6 mi · ~5 min (12 min walking)</span><button class="dm-skip" data-skip="13:08,5,Riding to Leavey Library">⏩ Ride 5 min</button><br>Then <b>Lock at a rack</b> → Leavey Library → photo of it locked.</span></li>
+        <li><span class="tm">1:03–1:08<small>riding</small></span><span>Rides to <b>Leavey Library</b>. <span class="dist">0.6 mi · ~5 min (19 min walking)</span><button class="dm-skip" data-skip="+5,5,Riding to Leavey Library">⏩ Ride 5 min</button><br>Then <b>Lock at a rack</b> → Leavey Library → photo of it locked.</span></li>
         <li><span class="tm">1:08–2:08<small>Leavey</small></span><span>Studies for an hour. The scooter waits, locked; only he has the key. <button class="dm-skip" data-skip="14:08,60,Studying at Leavey for an hour">⏩ Study 1 hour</button></span></li>
-        <li><span class="tm">2:08–2:12<small>riding</small></span><span><b>Unlock &amp; ride</b> to the <b>Lyon Center</b> gym. <span class="dist">0.5 mi · ~4 min (9 min walking)</span><button class="dm-skip" data-skip="14:12,4,Riding to the Lyon Center">⏩ Ride 4 min</button><br>Then <b>Lock at a rack</b> → Lyon Center → photo.</span></li>
+        <li><span class="tm">2:08–2:12<small>riding</small></span><span><b>Unlock &amp; ride</b> to the <b>Lyon Center</b> gym. <span class="dist">0.5 mi · ~4 min (14 min walking)</span><button class="dm-skip" data-skip="+4,4,Riding to the Lyon Center">⏩ Ride 4 min</button><br>Then <b>Lock at a rack</b> → Lyon Center → photo.</span></li>
         <li><span class="tm">2:12–3:42<small>Lyon Center</small></span><span>Works out for an hour and a half. <button class="dm-skip" data-skip="15:42,90,Working out at the Lyon Center">⏩ Gym 1½ hours</button></span></li>
-        <li><span class="tm">3:42–3:46<small>riding home</small></span><span><b>Unlock &amp; ride</b> home. <span class="dist">0.5 mi · ~4 min (10 min walking)</span><button class="dm-skip" data-skip="15:46,4,Riding home to Parkside">⏩ Ride 4 min</button><br><b>Return to IRC Parkside</b>: scan the sticker, battery photo, one photo of it locked, key back in the box, <b>End rental</b>.</span></li>
+        <li><span class="tm">3:42–3:46<small>riding home</small></span><span><b>Unlock &amp; ride</b> home. <span class="dist">0.5 mi · ~4 min (15 min walking)</span><button class="dm-skip" data-skip="+4,4,Riding home to Parkside">⏩ Ride 4 min</button><br><b>Return to IRC Parkside</b>: scan the sticker, battery photo, one photo of it locked, key back in the box, <b>End rental</b>.</span></li>
       </ol>
       <ol class="dm-list" id="part-lend" data-part="lend" hidden>
         <li><span class="tm">Garage<small>in the app</small></span><span>Taps <b>Garage</b> → <b>Choose a lock</b> → <b>Key box · start today</b>. A $20 code box holds the key to his own lock. Renters get the code after their photos and put the key back at the end. He can start lending today.</span></li>
@@ -107,8 +107,9 @@ const dm = (() => {
   }
   // Skip to a time of day (or at least `min` minutes, if the real clock already passed it) with the clock animation.
   async function skip(spec) {
-    const [hm, min, caption] = spec.split(','), [h, m] = hm.split(':').map(Number);
-    const left = Math.round((atToday(h, m) - now()) / 60000);
+    const [hm, min, caption] = spec.split(',');
+    if (hm[0] === '+') return Demo.skip(+min, caption);   // riding: exactly this long, so the time-saved number is right
+    const [h, m] = hm.split(':').map(Number), left = Math.round((atToday(h, m) - now()) / 60000);
     await Demo.skip(Math.max(left, +min), caption);
   }
   // Highlight where Damian is in his day, read from the app's own state.
@@ -134,6 +135,8 @@ const dm = (() => {
     // keep the current step on screen if the box has to scroll
     const cur = document.querySelector('.dm-list:not([hidden]) li.now'), key = cur ? cur.textContent.slice(0, 16) : '';
     if (cur && key !== last) { last = key; const box = document.querySelector('.dm'), r = cur.getBoundingClientRect(), br = box.getBoundingClientRect(); if (r.top < br.top || r.bottom > br.bottom) box.scrollBy({ top: r.top - br.top - 60, behavior: 'smooth' }); }
+    const bk = S.booking, tr = S.trips[0];   // live time saved, from the app's own numbers
+    document.getElementById('dm-saved').textContent = bk && bk.startedAt ? `So far: ${savedMins(bk)} min saved vs walking ${rideMiles(bk).toFixed(1)} mi at 2 mph` : tr && tr.saved != null ? `This ride: ${tr.saved} min saved vs walking at 2 mph` : '';
     document.getElementById('dm-book').disabled = !S.mine.listed || !!S.mine.rental;
     document.getElementById('dm-back').disabled = !S.mine.rental;
   }
