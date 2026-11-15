@@ -62,7 +62,7 @@ const ROUTES_BLOCKED = 'Hahn Plaza and campus intersections are walk-only zones 
 /* ---------- state ---------- */
 let S = { skew: 0 };
 function seed() {
-  const n = Date.now(), until = h => Math.min(roundUp30(n + h * HOUR), endOfDay() || n + h * HOUR);
+  const n = now(), until = h => Math.min(roundUp30(n + h * HOUR), endOfDay() || n + h * HOUR);
   const O = (name, color, dorm) => ({ name, initials: name.slice(0, 2).toUpperCase(), color, dorm });
   return {
     v: 1, skew: 0, user: null, license: null, agreed: false, filter: 'all', rackFilter: null,
@@ -574,7 +574,6 @@ const A = window.A = {
   agree() { S.agreed = true; save(); go('#/home'); },
   filter(k) { S.filter = k; render(); },
   rack(id) { S.rackFilter = id; render(); },
-  sel(vid, k) { S.sel = { vid, k }; render(); },
   book(vid) {
     const v = S.vehicles.find(x => x.id === vid), curfew = Math.min(v.until, endOfDay()), rt = rateOf(v);
     modal(`<div class="h3" style="font-size:20px">Confirm ${esc(v.name)}</div><p class="sm muted">Round trip from ${esc(rack(v.rack).name)}</p>
