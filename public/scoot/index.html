@@ -6,7 +6,7 @@
 <title>SCoot</title>
 <meta name="description" content="SCoot lets USC students rent each other's scooters and bikes: pick one up at the owner's designated area, ride, and bring it back to the same area.">
 <meta name="theme-color" content="#990000">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23990000'/%3E%3Ctext x='32' y='44' font-size='26' text-anchor='middle' fill='%23FFCC00' font-family='Arial' font-weight='900'%3ESC%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -15,7 +15,7 @@
 <body>
 <div class="stage">
   <main class="explain">
-    <div class="brand"><span class="logo">SC</span><div><b>SCoot</b><small>AI@USC 2026 · working prototype</small></div></div>
+    <div class="brand"><img class="logo" src="logo.svg" alt="SCoot logo"><div><b>SCoot</b><small>AI@USC 2026 · working prototype</small></div></div>
     <h1>Rent a scooter from a student in your building.</h1>
     <p class="lede">SCoot lets USC students rent out their scooters and bikes to other students. You pick one up at the owner’s designated area, ride it, and bring it back to the same area. The owner earns money passively.</p>
 
@@ -119,5 +119,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="app.js"></script>
 <script src="player.js"></script>
+<button id="ask-open" class="ask-bubble" aria-expanded="false" aria-controls="ask-panel"><b>Ask SCoot AI</b><span>logistics questions, please!</span></button>
+<div id="ask-panel" class="ask-panel" role="dialog" aria-label="Ask SCoot AI" hidden>
+  <div class="ask-head"><img src="logo.svg" alt="" width="28" height="28"><b>Ask SCoot AI</b><button id="ask-close" aria-label="Close">✕</button></div>
+  <div class="ask-log" id="ask-log" aria-live="polite"><div class="ask-msg bot">Ask me how SCoot works: prices, locks and key boxes, curfews, what happens if the battery dies or something breaks, how owners get paid, or the pilot plan.</div></div>
+  <form id="ask-form" class="ask-form"><input id="ask-in" maxlength="1000" placeholder="What happens if I'm late?" autocomplete="off" aria-label="Your question"><button type="submit">Send</button></form>
+  <p class="ask-note">Answers come from Claude Opus 5.5 using SCoot’s documents. This site records clicks and questions to improve the demo.</p>
+</div>
+<script src="track.js"></script>
+<script src="ask.js"></script>
 </body>
 </html>

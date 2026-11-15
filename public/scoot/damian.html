@@ -6,7 +6,7 @@
 <title>SCoot · Damian's day</title>
 <meta name="description" content="SCoot demo: Damian rents a scooter from his dorm rack for a library-and-gym afternoon, then lists his own.">
 <meta name="theme-color" content="#990000">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23990000'/%3E%3Ctext x='32' y='44' font-size='26' text-anchor='middle' fill='%23FFCC00' font-family='Arial' font-weight='900'%3ESC%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -46,7 +46,7 @@
 <body>
 <div class="stage dmstage">
   <main class="dm" aria-label="Damian's day">
-    <div class="dm-head"><span class="logo">SC</span><div><b>Damian’s day with SCoot</b><small>Lives at IRC Parkside · Parkside → <b>Leavey Library</b> (study 1 h) → <b>Lyon Center</b> (gym 1½ h) → Parkside</small></div>
+    <div class="dm-head"><img class="logo" src="logo.svg" alt="SCoot logo"><div><b>Damian’s day with SCoot</b><small>Lives at IRC Parkside · Parkside → <b>Leavey Library</b> (study 1 h) → <b>Lyon Center</b> (gym 1½ h) → Parkside</small></div>
       <div class="dm-tabs" role="tablist"><button id="tab-rent" class="on" role="tab" onclick="dm.tab('rent')">1 · Renting</button><button id="tab-lend" role="tab" onclick="dm.tab('lend')">2 · Lending his own</button></div></div>
     <div class="dm-grid">
       <div><div id="dm-map"></div>
@@ -87,6 +87,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="app.js"></script>
 <script src="player.js"></script>
+<script src="track.js"></script>
 <script>
 // Damian's page: the box on the left lays out his day; its buttons only move the clock (with the clock animation) or
 // stand in for another student. Everything else is tapped in the phone, using the real app and real AI checks.

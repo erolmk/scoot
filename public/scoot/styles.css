@@ -8,7 +8,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);
-  background:radial-gradient(1200px 700px at 80% -10%,#ffe8a3 0,transparent 55%),radial-gradient(900px 600px at -10% 110%,#f3c1c1 0,transparent 55%),#fbf7f2;}
+  background:radial-gradient(1200px 700px at 80% -10%,#ffe8a3 0,transparent 55%),radial-gradient(900px 600px at -10% 110%,#f3c1c1 0,transparent 55%),#fbf7f2;background-attachment:fixed;}   /* one gradient for the whole page, not one per screen height */
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 input,select{font:inherit}
 
@@ -18,7 +18,7 @@ input,select{font:inherit}
 .explain .brand{display:flex;align-items:center;gap:12px;margin-bottom:26px}
 .explain .brand b{font-size:22px;font-weight:900;letter-spacing:-.5px;display:block}
 .explain .brand small{color:var(--cardinal);font-weight:700}
-.logo{width:44px;height:44px;border-radius:13px;background:var(--cardinal);color:var(--gold);display:grid;place-items:center;font-weight:900;font-size:19px;box-shadow:0 6px 18px #99000040}
+.logo{width:44px;height:44px;border-radius:13px;box-shadow:0 6px 18px #99000040;display:block}
 .explain h1{font-size:40px;line-height:1.06;letter-spacing:-1.4px;margin:0 0 14px;font-weight:900}
 .explain .lede{font-size:18.5px;line-height:1.5;color:var(--ink);margin:0}
 .explain section{margin-top:28px;padding-top:22px;border-top:1px solid #0000001a}
@@ -138,7 +138,7 @@ input,select{font:inherit}
 /* ---------- welcome ---------- */
 .welcome{background:linear-gradient(165deg,#b30000 0%,#990000 45%,#5c0000 100%);color:#fff}
 .welcome .hero{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px}
-.bigR{width:86px;height:86px;border-radius:26px;background:var(--gold);color:var(--cardinal);font-size:40px;font-weight:900;display:grid;place-items:center;box-shadow:0 18px 40px -10px #0008;margin-bottom:28px}
+.bigR{width:86px;height:86px;border-radius:26px;display:block;box-shadow:0 18px 40px -10px #0008;margin-bottom:28px}
 .welcome h1{font-size:36px;margin:0;letter-spacing:-1.2px;line-height:1.02;font-weight:900}
 .welcome h1 em{font-style:normal;color:var(--gold)}
 .welcome p{opacity:.88;line-height:1.5;font-size:16px;margin:16px 0 0}
@@ -302,3 +302,19 @@ input,select{font:inherit}
 .codebox{display:flex;gap:10px;justify-content:center;margin:12px auto 16px}
 .codebox span{width:56px;height:72px;border-radius:14px;background:#16110f;color:var(--gold);font-size:40px;font-weight:900;display:grid;place-items:center;box-shadow:0 10px 24px -12px #000}
 .pl-cursor.slow{transition:transform 2.1s cubic-bezier(.3,.7,.2,1),opacity .4s}
+
+/* Ask SCoot AI chat bubble (landing page) */
+.ask-bubble{position:fixed;left:20px;bottom:20px;z-index:50;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:11px 16px;border-radius:18px;background:var(--cardinal);color:#fff;box-shadow:0 12px 30px -8px #99000088;text-align:left}
+.ask-bubble b{font-size:15px}.ask-bubble span{font-size:12.5px;color:var(--gold);font-weight:700}
+.ask-panel{position:fixed;left:20px;bottom:86px;z-index:51;width:min(380px,calc(100vw - 40px));height:min(520px,calc(100vh - 120px));display:flex;flex-direction:column;background:#fff;border-radius:20px;box-shadow:0 30px 70px -20px #4a1a1a88;overflow:hidden}
+.ask-panel[hidden]{display:none}
+.ask-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--cardinal);color:#fff}.ask-head img{border-radius:8px}.ask-head b{flex:1}
+.ask-head button{color:#fff;font-size:18px;width:32px;height:32px;border-radius:10px}
+.ask-log{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#faf7f4}
+.ask-msg{max-width:88%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-wrap}
+.ask-msg.bot{background:#fff;border:1px solid var(--line);align-self:flex-start}.ask-msg.me{background:var(--cardinal);color:#fff;align-self:flex-end}
+.ask-msg.wait{color:var(--mute);font-style:italic}
+.ask-form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.ask-form input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:1.5px solid #e3d9d2;font-size:14px}
+.ask-form button{padding:0 16px;border-radius:12px;background:var(--ink);color:var(--gold);font-weight:800}
+.ask-note{margin:0;padding:0 12px 10px;font-size:11.5px;color:var(--mute)}

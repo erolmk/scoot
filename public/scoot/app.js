@@ -293,7 +293,7 @@ const topbar = (title, backTo = true, right = '') => `<div class="top">${backTo 
 const PAGES = {};
 
 PAGES.welcome = () => {
-  app.innerHTML = `<div class="view welcome"><div class="hero"><div class="bigR">SC</div>
+  app.innerHTML = `<div class="view welcome"><div class="hero"><img class="bigR" src="logo-gold.svg" alt="SCoot logo">
     <h1>Rent a scooter from a student in <em>your building.</em></h1>
     <p>Pick it up at the owner’s rack. Ride to class. Bring it back to the same rack by the owner’s curfew. Usually $5 for the first 2 hours and 2 miles.</p>
     <div class="fighton">✌ FIGHT ON. SCOOT ON.</div></div>

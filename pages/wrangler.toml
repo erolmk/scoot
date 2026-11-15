@@ -9,3 +9,8 @@ binding = "AI"
 
 [vars]
 MODEL = "claude-opus-4-7"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "scoot-events"
+database_id = "13a9aca9-3bb5-4e0e-b2a9-5d039594fbf2"
