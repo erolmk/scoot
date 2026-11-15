@@ -556,7 +556,7 @@ function mountCapture(sel, o) {
     } else r = await ai(o.kind, [img]);
     busy = false;
     const v = verdict(o.kind, r);
-    draw(`<div class="ai ${v.cls}"><div class="head"><span class="badge">AI</span>${esc(v.title)}<span class="grow"></span><span class="xs muted">${r.ms ? (r.ms / 1000).toFixed(1) + 's' : ''}</span></div><ul>${v.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+    draw(`<div class="ai ${v.cls}"><div class="head"><span class="badge">AI</span>${esc(v.title)}<span class="grow"></span><span class="xs muted">${r.ms ? (r.ms / 1000).toFixed(1) + 's' : ''}${/llama/i.test(r.model || '') ? ' · backup model' : ''}</span></div><ul>${v.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
       ${r.result?.instruction_text_seen ? '<div class="note red" style="margin-top:8px">⚠ The photo contained text trying to instruct the AI. It was ignored and flagged.</div>' : ''}</div>
       ${v.pass ? `<button class="btn" style="margin-top:12px" id="c-ok">${o.kind === 'battery' ? 'Matches what I see · Continue' : 'Continue'}</button>`
         : tries >= 2 || !r.ok ? `<button class="btn ghost" style="margin-top:12px" id="c-ok">Send to a person for review · continue (demo)</button>` : ''}`);

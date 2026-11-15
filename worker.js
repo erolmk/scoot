@@ -143,12 +143,30 @@ async function viaOpenRouter(kind, task, content, env) {
       }),
     });
     const j = await r.json();
-    if (!r.ok) return json({ ok: false, error: 'model_error', detail: j?.error?.message?.slice(0, 120) || r.status }, 502);
+    if (!r.ok) return env.AI ? viaWorkersAI(kind, task, parts, env) : json({ ok: false, error: 'model_error', detail: j?.error?.message?.slice(0, 120) || r.status }, 502);
     const call = j.choices?.[0]?.message?.tool_calls?.[0];
     if (!call) return json({ ok: false, error: 'no_result' }, 502);
     return json({ ok: true, kind, model, result: validate(kind, JSON.parse(call.function.arguments)) });
   } catch (e) {
+    if (env.AI) return viaWorkersAI(kind, task, parts, env);
     return json({ ok: false, error: e.name === 'TimeoutError' ? 'timeout' : 'upstream' }, 504);
+  }
+}
+
+// Backup when OpenRouter is down or out of credit: Cloudflare Workers AI vision model, same schema, same server-side validation.
+// The response names the model, and the app labels it as the backup.
+async function viaWorkersAI(kind, task, parts, env) {
+  const model = '@cf/meta/llama-4-scout-17b-16e-instruct';
+  try {
+    const out = await env.AI.run(model, {
+      messages: [{ role: 'system', content: SYS + ' Reply with JSON only, matching this schema: ' + JSON.stringify(task.schema) }, { role: 'user', content: parts }],
+      response_format: { type: 'json_schema', json_schema: task.schema }, max_tokens: 800,
+    });
+    const res = typeof out?.response === 'string' ? JSON.parse(out.response.replace(/^[^{]*/, '').replace(/[^}]*$/, '')) : out?.response;
+    if (!res || typeof res !== 'object') return json({ ok: false, error: 'no_result' }, 502);
+    return json({ ok: true, kind, model, result: validate(kind, res) });
+  } catch (e) {
+    return json({ ok: false, error: 'upstream', detail: String(e.message || e).slice(0, 120) }, 504);
   }
 }
 

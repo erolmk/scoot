@@ -14,5 +14,8 @@ directory = "./public"
 binding = "ASSETS"
 html_handling = "auto-trailing-slash"
 
+[ai]
+binding = "AI"
+
 [vars]
 MODEL = "claude-opus-4-7"
