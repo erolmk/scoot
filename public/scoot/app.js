@@ -233,6 +233,28 @@ let mapObj = null, tick = null;
 const go = h => { location.hash = h; };
 function back(fallback = '#/home') { history.length > 1 ? history.back() : go(fallback); }
 window.addEventListener('hashchange', render);
+// Desktop: scale the whole phone to fit the window instead of squashing it.
+function fitPhone() {
+  const w = $('#phonewrap'), p = $('#phone'); if (!w) return;
+  if (innerWidth <= 520) { p.style.transform = w.style.width = w.style.height = ''; return; }
+  const s = Math.min(1, (innerHeight - 40) / 844);
+  p.style.transform = `scale(${s})`; w.style.width = 390 * s + 'px'; w.style.height = 844 * s + 'px';
+}
+addEventListener('resize', fitPhone); fitPhone();
+// Landing-page "Show me" buttons drive the phone (signing in the demo user if needed).
+window.demoJump = h => {
+  if (!S.user) { S.user = { netid: 'ttrojan', name: 'Tommy', dorm: 'IRC' }; S.lastNetid = 'ttrojan'; }
+  S.agreed = true;
+  if (h === 'pickup') {
+    if (!unfinished(S.booking)) {
+      if (!licenseOk()) S.license = { kind: 'Sample license (demo)', exp: '2029-08-14', at: now() };
+      const v = S.vehicles.find(x => x.rack === S.user.dorm && x.type === 'scooter' && x.status === 'available') || S.vehicles.find(x => x.type === 'scooter' && x.status === 'available');
+      save(); return v ? A.confirm(v.id) : toast('No scooter free right now.');
+    }
+    h = { booked: '#/pickup', returning: '#/return' }[S.booking.phase] || '#/ride';
+  }
+  save(); if (location.hash === h) render(); else location.hash = h;
+};
 function render() {
   closeModal(); clearInterval(tick); tick = null;
   if (mapObj) { mapObj.remove(); mapObj = null; }
@@ -258,8 +280,8 @@ const PAGES = {};
 
 PAGES.welcome = () => {
   app.innerHTML = `<div class="view welcome"><div class="hero"><div class="bigR">SC</div>
-    <h1>Borrow a<br>Trojan's <em>ride.</em></h1>
-    <p>Scooters and bikes owned by students in your building. Pick one up at the rack, ride to class, bring it back. Owners earn while they're in lecture.</p>
+    <h1>Rent a scooter from a student in <em>your building.</em></h1>
+    <p>Pick it up at the owner’s rack. Ride to class. Bring it back to the same rack by the owner’s curfew. Usually $5 for the first 2 hours and 2 miles.</p>
     <div class="fighton">✌ FIGHT ON. SCOOT ON.</div></div>
     <div class="foot"><button class="btn gold" onclick="go('#/login')">Sign in with USC NetID</button>
     <p class="xs" style="text-align:center;opacity:.7;margin:14px 0 0">USC students only · prototype for AI@USC 2026</p></div></div>`;
