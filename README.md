@@ -1,9 +1,9 @@
 # SCoot — Fight On. Scoot On.
 
-**Borrow a fellow Trojan's scooter or bike. Round trip, USC-verified, AI-checked.**
+**USC students rent out their scooters and bikes to other students. You pick one up at the owner's designated area and bring it back there; the owner earns money passively.**
 Built at AI@USC 2026 (HackSC × USC AI Committee × USC Student Government).
 
-Live prototype: **https://seamengine.com/scoot/** (also **https://scootusc.pages.dev/**; Damian's tap-through day: **https://scootusc.pages.dev/damian**) · Pitch deck: **https://seamengine.com/scoot/SCoot_deck.pdf**
+Live prototype: **https://scootusc.pages.dev/** · Damian's tap-through day: **https://scootusc.pages.dev/damian** · Pitch deck: **https://scootusc.pages.dev/SCoot_deck.pdf**
 
 ## The problem
 - Scooters left on campus racks get stolen. One evening (Feb 5 2025) USC DPS reported three e-scooters stolen from campus racks and a fourth attempt, with cut cable locks left behind (https://dps.usc.edu/2025/02/07/motor-vehicle-theft-2/).
@@ -12,7 +12,7 @@ Live prototype: **https://seamengine.com/scoot/** (also **https://scootusc.pages
 - We asked 20 USC students: 6 of 8 scooter owners would probably rent theirs out, and 9 of 12 students without one would probably use it (the other 3 don't make the kind of commute that needs it).
 
 ## The idea
-Owners get a smart lock at no cost to them; part of SCoot's cut pays it off. In return, their scooter or bike can be borrowed by other verified students while it would otherwise sit idle.
+Owners set their own prices and choose when their scooter or bike can be rented. On day one they lend with a $20 key box; in the pilot SCoot adds a free smart padlock that rentals pay off.
 
 - **Round trip.** Pick it up at the owner's rack, bring it back to the same rack. No rebalancing problem.
 - **Owners set the price.** A start price covers the first 2 hours and 2 miles (the shortest rental), then a price for each started extra hour plus each started extra mile. At $5 / $2 / $2, Parkside to the Village gym and back (about 1.4 mi, 1½ h) is $5, and a 4-hour lecture plus travel (about 4 h 20 min, under 2 mi) is $11. Missing the owner's curfew costs $15. The owner keeps 70%. Of SCoot's 30%, half pays off the owner's $86 lock kit and half covers card fees and a safety fund; once the lock is paid off, the owner keeps 90%. Ordinary bikes are priced by time only; e-bikes keep the mile price.
@@ -21,6 +21,8 @@ Owners get a smart lock at no cost to them; part of SCoot's cut pays it off. In 
 - **Only Trojans.** USC NetID sign-in, plus a license check for e-scooters (CA Vehicle Code 21235).
 - **Cheap lock, no tracker.** A $48 TTLock smart padlock plus a $38 hardened chain. The renter's phone logs location at every unlock and lock (the ride log), so the lock needs no GPS and there's no monthly fee.
 - **Owners charge their own scooters.**
+- **Ask SCoot AI.** A chat bubble on the site answers logistics questions with Claude Opus 5.5, using a knowledge base built from these docs (`build_kb.py` -> `public/scoot/scoot_kb.md`).
+- **Analytics.** Page views, clicks, app screens, chat questions and AI check results are logged to Cloudflare D1 (`public/scoot/track.js`, `/scoot/api/track`). Never passwords or photos.
 
 ## Where AI is used (and where it isn't)
 Every check runs server-side through a vision model (Claude Opus 4.7) with **forced structured output** (a JSON schema), followed by **server-side validation**: every answer is checked against its schema (types, allowed values, required fields) plus rules the schema can't express, and anything malformed is rejected. `node test/validate_check.mjs` runs those checks offline. If the main provider is down, a backup vision model (Llama 4 Scout on Cloudflare Workers AI) runs the same checks and the app labels it.

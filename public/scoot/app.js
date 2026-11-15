@@ -408,7 +408,7 @@ PAGES.pickup = () => {
   } else if (step === 'condition') {
     body = `<p class="ink2 sm" style="margin-top:0">One photo of the whole ${v.type === 'scooter' ? 'scooter' : 'bike'} at the rack. This is the "before" photo: if someone claims damage later, the AI compares it with your return photo.</p><div id="cap"></div>`;
   } else if (keybox(v)) {
-    body = `<div style="text-align:center"><div class="xs muted b" style="letter-spacing:.08em">KEY BOX CODE</div><div class="codebox" id="lk">${String(v.code || '0000').split('').map(d => `<span>${esc(d)}</span>`).join('')}</div><div class="h3">${esc(v.owner.name)}’s key box</div><p class="sm muted" style="margin:6px 0 0">Turn the dials to this code, take out ${esc(v.owner.name)}’s key and open the lock. Keep the key with you and lock up with it whenever you park. ${esc(v.owner.name)} changes the code every night.</p></div>
+    body = `<div style="text-align:center"><div class="xs muted b" style="letter-spacing:.08em">KEY BOX CODE</div><div class="codebox" id="lk">${String(v.code || '0000').split('').map(d => `<span>${esc(d)}</span>`).join('')}</div><div class="h3">${esc(v.owner.name)}’s key box</div><p class="sm muted" style="margin:6px 0 0">Turn the dials to this code, take out ${esc(v.owner.name)}’s key and open the lock. Keep the key with you and lock up with it whenever you park. ${esc(v.owner.name)} changes the code every night.</p><div class="note" style="margin-top:10px;text-align:left">🤫 Keep this code to yourself. If it leaks and the scooter is stolen, you’re responsible.</div></div>
      <div class="card" style="margin-top:16px"><div class="kv"><span>Start battery</span><b>${e ? b.pickupBattery + '%' : '—'}</b></div><div class="kv"><span>Before photo</span><b style="color:var(--ok)">Saved ✓</b></div><div class="kv"><span>Back at ${esc(r.name)} by</span><b>${t(b.end)}</b></div></div>`;
     foot = `<button class="btn gold" onclick="A.unlock()">🔑 Got the key · Start ride</button>`;
   } else {
@@ -586,7 +586,7 @@ PAGES.rules = () => {
   <li><b>Battery died?</b> Kick it home to the rack without the motor. It’s still faster than walking. Report it and your curfew moves back 30 minutes.</li>
   <li><b>Curfew:</b> the owner’s back-by time, shown before you book. Miss it and there’s a one-time $15 fee. After 24 hours missing, it’s treated as stolen.</li>
   <li><b>Lock to a rack</b> every time you leave it. No passengers, no lending your booking to a friend, no overnight rentals.</li>
-  <li><b>Key box rides:</b> keep the owner’s key with you during the ride, then put it back in the box and spin the dials. Never share the code.</li>
+  <li><b>Key box rides:</b> keep the owner’s key with you during the ride, then put it back in the box and spin the dials. Open the box where no one can see the code, and never share it. If the scooter is stolen with a code you shared or let someone see, you’re responsible: SCoot and DPS will question you first, and you’ll likely pay for the loss.</li>
   <li><b>Walk-only zones:</b> walk it through Hahn Plaza and campus intersections. DPS tickets are on you.</li>
   <li><b>License:</b> e-scooters need a driver's license or learner's permit (CA Vehicle Code 21235). Helmet required under 18.</li></ol><div style="height:20px"></div></div></div>`;
 };

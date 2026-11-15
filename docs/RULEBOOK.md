@@ -6,7 +6,7 @@
 > - Money: owner 70% of the fare. SCoot's 30% is split equally: 15% of the fare toward the owner's $86 lock kit, 15% toward card fees and the safety fund. After the kit is paid off, the owner keeps 90%.
 > - Lock kit: TTLock smart padlock ($48) + ABUS hardened chain ($38), no GPS tracker, no monthly fee. The renter's phone logs location at every unlock and lock. Owners charge their own scooters; there are no charging stations.
 > - Ordinary bikes are time only (no mile price, no mile counter); e-bikes keep miles because of the battery. (Nov 15)
-> - Launch lock before smart padlocks: an owner-bought ~$20 key box holding the key to the owner's own lock; code shown after the pickup photos, changed by the owner every night. Key-box owners keep 90% from the first ride (no kit to pay off). Known limit: past renters know the code until the nightly change. (Nov 15)
+> - Launch lock before smart padlocks: an owner-bought ~$20 key box holding the key to the owner's own lock; code shown after the pickup photos, changed by the owner every night. Key-box owners keep 90% from the first ride (no kit to pay off). Known limit: past renters know the code until the nightly change. Renters must keep the code secret; if a scooter is stolen with a leaked code, the renter who had it is questioned first (SCoot and DPS) and held responsible for the loss. (Nov 15)
 > - See docs/COSTS.md for the current pilot budget.
 
 # SCoot Rulebook
@@ -719,8 +719,8 @@ Insurance, permissions, lock capability, lawful routes, and suitable staffing ar
 
 ### Website specification
 
-**Proposed deployment:** `https://seamengine.com/troyloop/`  
-**Direct mobile route:** `https://seamengine.com/troyloop/app`
+**Proposed deployment:** `https://scootusc.pages.dev/`  
+**Direct mobile route:** `https://scootusc.pages.dev/` (the app runs full screen on a phone)
 
 These are proposed paths, not verified deployed URLs.
 

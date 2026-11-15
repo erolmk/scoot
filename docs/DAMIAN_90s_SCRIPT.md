@@ -1,6 +1,6 @@
 # SCoot 90-second demo: Damian's day
 
-Record at https://scootusc.pages.dev/damian (same app as https://seamengine.com/scoot/damian).
+Record at https://scootusc.pages.dev/damian.
 The left box has the whole trip. Tap everything in the phone yourself. Use the black ⏩ buttons in the box whenever time passes: they play the clock animation and move the app's clock.
 
 About 225 words, which is roughly 90 seconds spoken at a normal pace (150 words a minute). Each row's time slot matches its word count.
