@@ -30,7 +30,7 @@ Every check runs on the server through a vision model (Claude Opus 4.7) with **f
 | Check | When | Returns |
 |---|---|---|
 | Battery reading | pickup + return photo of the display | `percent` only if a % sign is visible; bars are never turned into a fake percentage |
-| Parking & lock | mid-rental parking, return | upright, walkway blocked, lock through frame + rack, shackle closed, rack sticker visible; only a clear yes on each passes, unknown goes to a person |
+| Parking & lock | mid-rental parking, return | upright, walkway blocked, lock through frame + rack, shackle closed, rack sticker visible; fails only on a clear problem; details it can't see are listed as unknown and don't block; an unreadable photo is retaken, then goes to a person |
 | New damage | return vs pickup photo | list of new visible differences; **a human decides** |
 | License | before scooter rides | document type, state and expiry only. The AI provider processes the image for the check, and SCoot does not store it. The check does not prove identity |
 

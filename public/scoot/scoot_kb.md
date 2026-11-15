@@ -141,7 +141,7 @@ SCoot
 
 # DEVPOST WRITE-UP
 
-**SCoot in 30 seconds.** USC students rent out their scooters and bikes to other students. A renter picks one up at the owner's rack, rides, and brings it back to the same rack. The owner earns money passively: they set the price and, with a $20 key box, keep 90% of every rental. Claude reads the battery, checks the parking and lock, and flags new damage from phone photos; a person reviews anything unclear. 15 of the 20 students we asked said they would probably use it or rent theirs out (stated interest only). A USC pilot would start with three weeks of testing, without rides, for about $600. Try the prototype at https://scootusc.pages.dev (sign-in, payments and locks are simulated). Its map demo, https://scootusc.pages.dev/damian, follows one student's 1.6-mile afternoon: it costs $7 and saves about 35 minutes of walking.
+**SCoot in 30 seconds.** USC students rent out their scooters and bikes to other students. A renter picks one up at the owner's rack, rides, and brings it back to the same rack. The owner earns money passively: they set the price and, with a $20 key box, keep 90% of every rental. Claude reads the battery, checks the parking and lock, and flags new damage from phone photos; a person reviews every damage flag and any photo the AI can't read. 15 of the 20 students we asked said they would probably use it or rent theirs out (stated interest only). A USC pilot would start with three weeks of testing, without rides, for about $600. Try the prototype at https://scootusc.pages.dev (sign-in, payments and locks are simulated). Its map demo, https://scootusc.pages.dev/damian, follows one student's 1.6-mile afternoon: it costs $7 and saves about 35 minutes of walking.
 
 ## Inspiration
 Students' scooters at USC sit on outdoor racks, and they get stolen. One evening in February 2025, USC's Department of Public Safety (DPS) reported three e-scooters stolen from campus racks and a fourth attempt, with cut cable locks left behind. Other scooters sit unused while their owners are in class. Students who need a ride only now and then won't spend $300 or more on a scooter. Lime doesn't help: its own map marks USC as a red zone, so its scooters pile up at the gates. So these students walk.
@@ -166,7 +166,7 @@ How it works:
 
 **Where the AI does real work.** The AI only reports; rules and people decide.
 1. **Battery.** No scooter brand connects to our app, so the renter photographs the display at pickup and return and a vision model reads it. A percent counts only if the model's transcription shows a % sign; bars never become a made-up number. During the ride the app estimates the battery from that reading and the miles ridden, and it learns each scooter's drain per mile from the before and after photos.
-2. **Parking and lock.** Upright, out of the walkway, locked through the frame and the rack, shackle closed. A photo fails only on a clear problem; unclear ones go to a person.
+2. **Parking and lock.** Upright, out of the walkway, locked through the frame and the rack, shackle closed. A photo fails only on a clear problem. A detail the AI can't see is listed as unknown and doesn't block; a photo it can't read is retaken, and after two tries a person reviews it.
 3. **New damage.** It compares the return photo with the pickup photo and lists new visible differences. A person decides; the AI never charges anyone.
 4. **License.** It returns only the document type, state and expiry date, and SCoot doesn't store the image. A photo can't prove the license is yours, so in the pilot an attendant is present for the first pickups and returns.
 5. **Ask SCoot AI.** A chat bubble on the site answers logistics questions with Claude Opus 5.5, using SCoot's rulebook, costs and FAQ as its only source.
@@ -244,7 +244,7 @@ Every check runs on the server through a vision model (Claude Opus 4.7) with **f
 | Check | When | Returns |
 |---|---|---|
 | Battery reading | pickup + return photo of the display | `percent` only if a % sign is visible; bars are never turned into a fake percentage |
-| Parking & lock | mid-rental parking, return | upright, walkway blocked, lock through frame + rack, shackle closed, rack sticker visible; only a clear yes on each passes, unknown goes to a person |
+| Parking & lock | mid-rental parking, return | upright, walkway blocked, lock through frame + rack, shackle closed, rack sticker visible; fails only on a clear problem; details it can't see are listed as unknown and don't block; an unreadable photo is retaken, then goes to a person |
 | New damage | return vs pickup photo | list of new visible differences; **a human decides** |
 | License | before scooter rides | document type, state and expiry only. The AI provider processes the image for the check, and SCoot does not store it. The check does not prove identity |
 
