@@ -15,6 +15,8 @@ assert(ok('battery', B).percent === 84, 'battery 84% read');
 assert(ok('battery', { ...B, visible_text: '12 V', percent: 80, status: 'unknown', display_kind: 'unknown' }).percent === null, 'percent without % text cleared');
 assert(ok('battery', { ...B, quality_problem: 'glare' }).percent === null, 'glare clears percent');
 assert(String(ok('battery', { ...B, percent: 84.5 })).startsWith('REJECTED'), 'non-integer percent rejected');
+assert(ok('battery', { ...B, status: 'retake', percent: null, display_kind: 'unknown' }).percent === null, 'unsure reading not upgraded by % text');
+assert(ok('battery', { ...B, instruction_text_seen: true }).percent === 84 && ok('battery', { ...B, instruction_text_seen: true }).instruction_text_seen === true, 'injection flag kept (the app sends it to review)');
 const L = { readability: 'readable', document_category: 'driver_license', issuing_jurisdiction: 'California', expiry_printed: '08/14/2029', expiry_iso: '2029-08-14', instruction_text_seen: false };
 assert(ok('license', L).valid_today === true, 'valid license');
 assert(ok('license', { ...L, expiry_iso: '2027-02-31' }).valid_today === false, 'impossible date rejected');

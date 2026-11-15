@@ -6,10 +6,10 @@ Built at AI@USC 2026 (HackSC × USC AI Committee × USC Student Government).
 Live prototype: **https://seamengine.com/scoot/** · Pitch deck: **https://seamengine.com/scoot/SCoot_deck.pdf**
 
 ## The problem
-- Scooters left on campus racks get stolen. USC DPS logged four e-scooters stolen from campus racks in one evening (Feb 5 2025), with cut cable locks left behind.
+- Scooters left on campus racks get stolen. One evening (Feb 5 2025) USC DPS reported three e-scooters stolen from campus racks and a fourth attempt, with cut cable locks left behind (https://dps.usc.edu/2025/02/07/motor-vehicle-theft-2/).
 - The ones that survive sit idle for hours while their owners are in class.
 - Students who only need a scooter now and then can't justify buying one, and Lime is a red zone on campus. So they walk.
-- We asked 20 USC students: 6 of 8 scooter owners would probably rent theirs out, and 9 of 12 students without one would probably use it (the other 3 don't make trips long enough to need it).
+- We asked 20 USC students: 6 of 8 scooter owners would probably rent theirs out, and 9 of 12 students without one would probably use it (the other 3 don't make the kind of commute that needs it).
 
 ## The idea
 Owners get a smart lock at no cost to them; part of SCoot's cut pays it off. In return, their scooter or bike can be borrowed by other verified students while it would otherwise sit idle.

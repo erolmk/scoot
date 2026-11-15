@@ -1,13 +1,13 @@
 > **Current decisions (Nov 14 2026). These override anything below.**
-> - Name: **SCoot**. "TroyLoop" below is the old working name.
+> - Name: **SCoot** (some older sections may still say TroyLoop, the earlier working name).
 > - Price: each owner sets a start price that covers the first 2 hours and 2 miles (usually $5), then a price for each started extra hour and each started extra mile (usually $2 each). No blocks, no 15-minute extensions, no per-15-minute late fees.
 > - Curfew: the owner's back-by time. Missing it costs a one-time $10. Reporting lock trouble, a crash or a dead phone stops extra-time and curfew fees.
 > - Dead battery: the renter kicks it home without the motor, or walks it if riding isn't safe. One report moves the curfew 30 minutes.
-> - Money: owner 70%; of SCoot's 30%, 15% pays off the owner's $86 lock kit and 15% covers card fees and the safety fund. After the kit is paid off, the owner keeps 85%.
+> - Money: owner 70% of the fare. SCoot's 30% is split equally: 15% of the fare toward the owner's $86 lock kit, 15% toward card fees and the safety fund. After the kit is paid off, the owner keeps 85%.
 > - Lock kit: TTLock smart padlock ($48) + ABUS hardened chain ($38), no GPS tracker, no monthly fee. The renter's phone logs location at every unlock and lock. Owners charge their own scooters; there are no charging stations.
 > - See docs/COSTS.md for the current pilot budget.
 
-# SCoot Rulebook (written under the working name TroyLoop)
+# SCoot Rulebook
 
 **Final design proposal · November 14, 2026**  
 **Intended destination:** `G:\AIUSC\design\RULEBOOK.md`  
@@ -19,10 +19,10 @@ Where earlier documents disagree, the decisions below control the proposed produ
 
 ## 1. Product summary
 
-**TroyLoop** lets eligible USC students reserve another student’s scooter or bicycle, use it for a few hours, and bring it back to its original rack. “Troy” makes the Trojan connection explicit; “Loop” explains the round trip. Owners choose their lending windows and receive 70% of the rental fare. The app guides pickup, temporary parking, return, and problems; AI reads visible battery information and highlights parking or condition issues without deciding safety, blame, or charges. Build the complete website inside a realistic, decorative phone frame, with a direct mobile view. Public use initially means a clearly labeled software demonstration—not an unapproved rental business.
+**SCoot** lets eligible USC students reserve another student’s scooter or bicycle, use it for a few hours, and bring it back to its original rack. Owners choose their lending windows and receive 70% of the rental fare. The app guides pickup, temporary parking, return, and problems; AI reads visible battery information and highlights parking or condition issues without deciding safety, blame, or charges. Build the complete website inside a realistic, decorative phone frame, with a direct mobile view. Public use initially means a clearly labeled software demonstration—not an unapproved rental business.
 
-**Working name recommendation:** TroyLoop  
-**Tagline:** Borrow a ride. Bring it home.  
+**Name:** SCoot  
+**Tagline:** Fight On. Scoot On.  
 Name and trademark availability are **UNSURE**. Do not use USC’s seal, athletics marks, an official-looking university login, or language suggesting university endorsement.
 
 ### Decisions everyone must use
@@ -32,16 +32,16 @@ Name and trademark availability are **UNSURE**. Do not use USC’s seal, athleti
 | Product | Round-trip reservations of scooters and bicycles only |
 | Initial live-pilot inventory | Five vehicles: three electric scooters and two ordinary bicycles |
 | E-bikes | Supported in the design, deferred from initial live inventory |
-| Prices, all admitted vehicle types | Up to two hours: **$3**. More than two, up to four hours: **$5** |
-| Other products | No 30-minute, one-hour, eight-hour, overnight, or distance-priced product |
-| Owner share | **70%** of collected rental fare; platform receives 30% before expenses |
+| Prices | Owner-set: a start price covers the first 2 hours and 2 miles (usually **$5**), then each started extra hour and each started extra mile (usually **$2** each). One-time **$10** if the owner's curfew is missed |
+| Other products | No overnight rentals |
+| Owner share | **70%** of the fare. SCoot's 30% is split equally: 15% of the fare toward the owner's $86 lock kit, 15% toward card fees and the safety fund. After the kit is paid off, the owner keeps **85%** |
 | Temporary card authorization | **$25 electric; $10 ordinary bicycle**, separately disclosed from fare |
 | Normal authorization release | Operator requests release within **15 minutes after accepted custody**; bank processing can take longer |
 | Operational turnaround | At least 15 minutes, plus affirmative readiness and clearance of prior credentials |
 | Visible-damage reporting | Within 24 hours of return and before another ride or rental |
 | Hidden-defect reporting | Within seven days; later discovery does not prove renter responsibility |
 | Low-battery return | No routine monetary penalty in the first pilot |
-| Maximum enrolled value | **$500 vehicle value**, with separately recorded platform-kit value up to **$350** |
+| Maximum enrolled value | **$500 vehicle value**; lock kit **$86** |
 | Demonstration hardware transport | Authenticated **Wi-Fi** connection to one supervised ESP32 bench latch |
 | Bluetooth demonstration | Deferred unless separately implemented and tested; never claim Wi-Fi proves Bluetooth |
 | Live phone access | Tested vendor-supported iPhone/Android integration or explicitly attended vendor-app trial |

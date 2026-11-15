@@ -89,7 +89,7 @@ function validate(kind, r) {
   if (kind === 'battery') {
     // A percentage is trusted only if the model's own transcription shows that number with a % sign.
     const m = /(^|[^\d])(\d{1,3})\s*%/.exec(r.visible_text || ''), shown = m && +m[2] <= 100 ? +m[2] : null;
-    if (shown != null && r.quality_problem === 'none' && !r.instruction_text_seen) { r.display_kind = 'percent'; r.percent = shown; r.status = 'readable'; }
+    if (shown != null && r.status === 'readable' && r.quality_problem === 'none' && !r.instruction_text_seen) { r.display_kind = 'percent'; r.percent = shown; }
     if (r.percent !== shown || r.status !== 'readable' || r.quality_problem !== 'none') r.percent = null;
     if (r.percent == null && r.display_kind === 'percent') r.display_kind = 'unknown';
     const bars = r.bars_lit != null && r.bars_total != null && r.bars_total > 0 && r.bars_total <= 10 && r.bars_lit >= 0 && r.bars_lit <= r.bars_total;
@@ -99,7 +99,7 @@ function validate(kind, r) {
   if (kind === 'license') {
     const d = /^\d{4}-\d{2}-\d{2}$/.test(r.expiry_iso || '') ? new Date(r.expiry_iso + 'T00:00:00Z') : null;
     if (!d || isNaN(d) || d.toISOString().slice(0, 10) !== r.expiry_iso) r.expiry_iso = null;   // rejects 2027-02-31
-    r.valid_today = !!(r.readability === 'readable' && r.expiry_iso && r.expiry_iso >= new Date().toISOString().slice(0, 10) && ['driver_license', 'instruction_permit'].includes(r.document_category));
+    r.valid_today = !!(r.readability === 'readable' && r.expiry_iso && r.expiry_iso >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }) && ['driver_license', 'instruction_permit'].includes(r.document_category));
   }
   if (kind === 'damage' && r.comparable === 'no') r.new_visible_differences = [];
   return r;
@@ -135,6 +135,7 @@ async function check(req, env) {
   content.push({ type: 'text', text: task.prompt });
   const model = env.MODEL || 'claude-opus-4-7';
   if (env.OPENROUTER_API_KEY) return viaOpenRouter(body.kind, task, content, env);
+  const backup = () => env.AI ? viaWorkersAI(body.kind, task, content.map(c => c.type === 'image' ? { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + c.source.data } } : c), env) : null;
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal: AbortSignal.timeout(25000),
@@ -146,13 +147,13 @@ async function check(req, env) {
       }),
     });
     const j = await r.json();
-    if (!r.ok) return json({ ok: false, error: 'model_error', detail: j?.error?.type || r.status }, 502);
+    if (!r.ok) return backup() || json({ ok: false, error: 'model_error', detail: j?.error?.type || r.status }, 502);
     const out = (j.content || []).find(c => c.type === 'tool_use');
-    if (!out) return json({ ok: false, error: 'no_result' }, 502);
+    if (!out) return backup() || json({ ok: false, error: 'no_result' }, 502);
     // Images are not stored anywhere: they live only in this request's memory.
     return answer(body.kind, task, model, out.input);
   } catch (e) {
-    return json({ ok: false, error: e.name === 'TimeoutError' ? 'timeout' : 'upstream' }, 504);
+    return backup() || json({ ok: false, error: e.name === 'TimeoutError' ? 'timeout' : 'upstream' }, 504);
   }
 }
 
@@ -173,7 +174,7 @@ async function viaOpenRouter(kind, task, content, env) {
     const j = await r.json();
     if (!r.ok) return env.AI ? viaWorkersAI(kind, task, parts, env) : json({ ok: false, error: 'model_error', detail: j?.error?.message?.slice(0, 120) || r.status }, 502);
     const call = j.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) return json({ ok: false, error: 'no_result' }, 502);
+    if (!call) return env.AI ? viaWorkersAI(kind, task, parts, env) : json({ ok: false, error: 'no_result' }, 502);
     let raw; try { raw = JSON.parse(call.function.arguments); } catch { return json({ ok: false, error: 'invalid_result', model }, 502); }
     return answer(kind, task, model, raw);
   } catch (e) {
