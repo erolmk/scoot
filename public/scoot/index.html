@@ -21,9 +21,9 @@
 
     <section>
       <h2>One rental, start to finish</h2>
-      <p>Maya lives in IRC and lends her scooter on weekdays at $5 / $2 / $2. Tommy lives in IRC too.</p>
+      <p>Maya lives in IRC and lends her scooter on weekdays: $5 to start, $2 per extra hour, $2 per extra mile. Tommy lives in IRC too.</p>
       <ol class="lp-steps">
-        <li><b>12:30 · Book.</b> Tommy opens the app and sees the scooters at the IRC rack, each with the owner’s price and curfew (the time it must be back). He books Maya’s. He has 10 minutes to get to it, or the booking cancels for free. <button class="lp-show" onclick="demoJump('#/home')">Show me</button></li>
+        <li><b>12:30 · Book.</b> Tommy opens the app and sees the scooters at the IRC rack, each with the owner’s price and curfew (the time it must be back). He books Maya’s. It’s his until he returns it, by the curfew at the latest. He has 10 minutes to get to it, or the booking cancels for free. <button class="lp-show" onclick="demoJump('#/home')">Show me</button></li>
         <li><b>12:35 · Pick up.</b> At the rack he takes two photos: the battery display (the AI reads 84%) and the whole scooter (the “before” photo). His phone opens the padlock over Bluetooth. Billing starts. <button class="lp-show" onclick="demoJump('pickup')">Show me</button></li>
         <li><b>12:45 · Park at class.</b> He rides 0.6 miles to Leavey Library, runs the chain through the frame and a rack, closes the padlock, and takes a quick photo so the AI can check the parking. Only his phone can open it now. The chain and padlock always stay with the scooter.</li>
         <li><b>2:00 · Ride home.</b> After class he unlocks it and rides back to the IRC rack.</li>
@@ -48,7 +48,7 @@
       <h2>What owners do</h2>
       <ul class="lp-list">
         <li>Get a TTLock smart padlock and a hardened chain ($86 for both) with nothing to pay up front. There is no GPS tracker.</li>
-        <li>Pick the days, hours, curfew and prices. Bookings inside those hours are automatic; owners don’t approve each one.</li><li>Charge the scooter themselves: pause rentals in the app and open the padlock with their own key. They leave the scooter’s own app lock off, so a renter can power it on with its button.</li>
+        <li>Pick the days, hours, curfew and prices. Bookings inside those hours are automatic; owners don’t approve each one.</li><li>Charge the scooter themselves: pause rentals in the app and open the padlock with their own key. They leave the scooter’s own app lock off, so a renter can power it on with its button. The padlock’s battery lasts months, and the owner sees its level in the app.</li>
         <li>Keep 70% of each fare. 15% repays their lock and 15% covers card fees and a safety fund. Once the lock is repaid (about 100 rentals at a $6 fare), they keep 85%. If they quit before that, the lock goes back to SCoot.</li>
         <li>See who has the scooter and when it’s due back, not where the renter parked.</li>
       </ul>
@@ -64,7 +64,7 @@
         <dt>Who is responsible during the ride?</dt><dd>The renter, a signed-in USC student. Their phone records its location at every unlock and lock (the ride log).</dd>
         <dt>How does the app know the battery?</dt><dd>The AI reads it from the pickup photo. During the ride the app subtracts the miles ridden times that scooter’s drain per mile, and the return photo corrects it. Scooters below 40–60% charge (depending on their range) can’t be booked.</dd>
         <dt>Phone dies, or the lock won’t open?</dt><dd>Support opens the lock or sends someone. Reporting it stops extra-time and curfew fees.</dd>
-        <dt>Battery dies?</dt><dd>The renter kicks it home without the motor, or walks it if that isn’t safe.</dd>
+        <dt>Battery dies?</dt><dd>The renter kicks it home without the motor, or walks it if that isn’t safe. Reporting it moves the curfew back 30 minutes.</dd>
         <dt>Damage?</dt><dd>If the AI flags new damage, a person compares the before and after photos and decides. If the damage is confirmed, the renter pays for the repair, starting with the $25 hold. The scooter stays off the app until it’s checked.</dd>
         <dt>Theft or a crash?</dt><dd>The renter reports it in the app; for theft they also call DPS. If the scooter was locked properly, the renter owes nothing and the safety fund pays the owner (backed by insurance before any real rides).</dd>
         <dt>What if a photo is unclear?</dt><dd>The renter can retake it, or send it to a person and keep going. Billing doesn’t wait for the review; the scooter stays off the app until it’s done.</dd>
