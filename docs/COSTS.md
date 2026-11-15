@@ -34,6 +34,18 @@ Charging is the owner's job, so the pilot buys no charging equipment.
 | Six weeks of running costs | $3,380 | $560 |
 | **Total** | **about $7,900** | **about $2,600** |
 
-Running costs with paid staff are mostly people at $20 an hour (on-call duty, inspections), plus an insurance placeholder of $300 a month. In the volunteer version, trained student volunteers take the on-call shifts. Insurance, card fees and hosting stay.
+These are two scenarios, not one budget with cheaper labor. Running costs with paid staff are mostly people at $20 an hour (on-call duty, inspections), plus an insurance placeholder of $300 a month. In the volunteer version, trained student volunteers take the on-call shifts, and the theft and repair reserves are smaller ($1,000 and $500 instead of $2,930 and $1,000). Keeping the full reserves would make the volunteer version about $5,000. Insurance, card fees and hosting stay in both.
 
-Rental fares (about $240 a month at 40 rentals of about $6; SCoot's 30% share is about $70, half of which pays off owners' lock kits) don't cover the pilot. Each owner's kit is paid back from 15% of their fares (about 100 rentals); after that the owner keeps 85%. It's a subsidized experiment.
+AI checks cost about $0.015 each through the provider; about 5 per rental (license once, battery twice, parking, damage) is under $10 for the whole pilot.
+
+## Per-ride money (at a $6 fare)
+
+| | |
+|---|---:|
+| Owner (70%) | $4.20 |
+| Owner's lock kit payoff (15%) | $0.90 |
+| Card fees + safety fund (15%) | $0.90 |
+
+Card fees take about $0.47 of that last $0.90. A kit is paid off after about 96 rentals; at pilot volume (about 8 rentals per vehicle a month) that's about a year, so the pilot grant funds the kits up front and rentals repay them afterward. Once a kit is paid off, the owner keeps 85%.
+
+Rental fares (about $240 a month at 40 rentals of about $6; SCoot's 30% share is about $72, half of which pays off owners' lock kits) don't cover the pilot. It's a subsidized experiment, funded in stages: no real ride until insurance, rack permission, a named operator and a lock test are in place.

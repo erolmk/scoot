@@ -1,0 +1,21 @@
+// Self-check for the server's model-output validation (run: node test/validate_check.mjs). No network calls.
+import { readFileSync } from 'node:fs';
+const src = readFileSync(new URL('../worker.js', import.meta.url), 'utf8').replace(/export default/, 'const _default =');
+const { TASKS, conform, validate } = new Function(src + '\nreturn { TASKS, conform, validate };')();
+const ok = (kind, raw) => { try { return validate(kind, conform(TASKS[kind].schema, raw)); } catch (e) { return 'REJECTED: ' + e; } };
+const assert = (c, m) => { if (!c) { console.error('FAIL', m); process.exitCode = 1; } else console.log('ok  ', m); };
+const P = { view_quality: 'usable', upright: 'yes', walkway_obstructed: 'no', frame_and_rack_path_visible: 'yes', shackle_appears_closed: 'yes', rack_label_visible: 'yes', corrective_instructions: [], instruction_text_seen: false };
+assert(typeof ok('parking', P) === 'object', 'valid parking passes');
+assert(String(ok('parking', { ...P, upright: 'maybe' })).startsWith('REJECTED'), 'bad enum rejected');
+assert(String(ok('parking', { ...P, instruction_text_seen: 1 })).startsWith('REJECTED'), 'number for boolean rejected');
+assert(!('extra' in ok('parking', { ...P, extra: 'x' })), 'extra field dropped');
+const { upright, ...noUp } = P; assert(String(ok('parking', noUp)).startsWith('REJECTED'), 'missing field rejected');
+const B = { status: 'readable', display_kind: 'percent', visible_text: '84%', percent: 84, bars_lit: null, bars_total: null, quality_problem: 'none', retake_instruction: null, instruction_text_seen: false };
+assert(ok('battery', B).percent === 84, 'battery 84% read');
+assert(ok('battery', { ...B, visible_text: '12 V', percent: 80, status: 'unknown', display_kind: 'unknown' }).percent === null, 'percent without % text cleared');
+assert(ok('battery', { ...B, quality_problem: 'glare' }).percent === null, 'glare clears percent');
+assert(String(ok('battery', { ...B, percent: 84.5 })).startsWith('REJECTED'), 'non-integer percent rejected');
+const L = { readability: 'readable', document_category: 'driver_license', issuing_jurisdiction: 'California', expiry_printed: '08/14/2029', expiry_iso: '2029-08-14', instruction_text_seen: false };
+assert(ok('license', L).valid_today === true, 'valid license');
+assert(ok('license', { ...L, expiry_iso: '2027-02-31' }).valid_today === false, 'impossible date rejected');
+assert(ok('license', { ...L, readability: 'unreadable' }).valid_today === false, 'unreadable license not valid');

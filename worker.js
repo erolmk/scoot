@@ -69,21 +69,45 @@ const TASKS = {
 };
 
 // Server-side checks: the model's output is never trusted as-is.
+// Every model answer must match its task's JSON schema (types, allowed values, required fields) before the app sees it.
+// Fields outside the schema are dropped. A mismatch is an error, never a pass.
+function conform(s, v, path = 'result') {
+  const types = [].concat(s.type), t = v === null ? 'null' : Array.isArray(v) ? 'array' : Number.isInteger(v) ? 'integer' : typeof v;
+  if (!types.includes(t)) throw path + ': expected ' + types.join('|');
+  if (s.enum && !s.enum.includes(v)) throw path + ': value not allowed';
+  if (t === 'string' && v.length > 400) throw path + ': too long';
+  if (t === 'array') { if (s.maxItems != null && v.length > s.maxItems) throw path + ': too many items'; return v.map((x, i) => conform(s.items, x, `${path}[${i}]`)); }
+  if (t !== 'object') return v;
+  for (const k of s.required || []) if (!(k in v)) throw path + '.' + k + ': missing';
+  const out = {};
+  for (const k of Object.keys(s.properties)) if (k in v) out[k] = conform(s.properties[k], v[k], path + '.' + k);
+  return out;
+}
+
+// Rules the schema can't express. Missing or contradictory evidence becomes unknown/null, never a guess.
 function validate(kind, r) {
   if (kind === 'battery') {
-    if (r.percent != null && (r.percent < 0 || r.percent > 100)) r.percent = null, r.status = 'unknown';
-    if (r.bars_total != null && (r.bars_total <= 0 || r.bars_lit < 0 || r.bars_lit > r.bars_total)) r.bars_lit = r.bars_total = null;
-    // Cross-check with the model's own transcription: a visible "NN%" means the display shows a percentage.
-    const m = /(^|[^\d])(\d{1,3})\s*%/.exec(r.visible_text || '');
-    if (m && +m[2] <= 100 && r.quality_problem === 'none' && !r.instruction_text_seen) { r.display_kind = 'percent'; r.percent = +m[2]; r.status = 'readable'; }
-    if (r.display_kind !== 'percent' || r.quality_problem !== 'none') { if (r.status === 'readable' && r.display_kind !== 'percent') r.percent = null; }
+    // A percentage is trusted only if the model's own transcription shows that number with a % sign.
+    const m = /(^|[^\d])(\d{1,3})\s*%/.exec(r.visible_text || ''), shown = m && +m[2] <= 100 ? +m[2] : null;
+    if (shown != null && r.quality_problem === 'none' && !r.instruction_text_seen) { r.display_kind = 'percent'; r.percent = shown; r.status = 'readable'; }
+    if (r.percent !== shown || r.status !== 'readable' || r.quality_problem !== 'none') r.percent = null;
+    if (r.percent == null && r.display_kind === 'percent') r.display_kind = 'unknown';
+    const bars = r.bars_lit != null && r.bars_total != null && r.bars_total > 0 && r.bars_total <= 10 && r.bars_lit >= 0 && r.bars_lit <= r.bars_total;
+    if (!bars) r.bars_lit = r.bars_total = null;
+    if (r.percent == null && r.status === 'readable' && !(r.display_kind === 'bars' && bars)) r.status = 'unknown';
   }
   if (kind === 'license') {
-    const ok = /^\d{4}-\d{2}-\d{2}$/.test(r.expiry_iso || '') && !isNaN(Date.parse(r.expiry_iso + 'T00:00:00Z'));
-    if (!ok) r.expiry_iso = null;
-    r.valid_today = !!(r.expiry_iso && r.expiry_iso >= new Date().toISOString().slice(0, 10) && ['driver_license', 'instruction_permit'].includes(r.document_category));
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(r.expiry_iso || '') ? new Date(r.expiry_iso + 'T00:00:00Z') : null;
+    if (!d || isNaN(d) || d.toISOString().slice(0, 10) !== r.expiry_iso) r.expiry_iso = null;   // rejects 2027-02-31
+    r.valid_today = !!(r.readability === 'readable' && r.expiry_iso && r.expiry_iso >= new Date().toISOString().slice(0, 10) && ['driver_license', 'instruction_permit'].includes(r.document_category));
   }
+  if (kind === 'damage' && r.comparable === 'no') r.new_visible_differences = [];
   return r;
+}
+function answer(kind, task, model, raw) {
+  let result;
+  try { result = validate(kind, conform(task.schema, raw)); } catch (e) { return json({ ok: false, error: 'invalid_result', detail: String(e).slice(0, 120), model }, 502); }
+  return json({ ok: true, kind, model, result });
 }
 
 // ponytail: per-isolate memory limit, resets when the isolate recycles; move to Durable Objects or the rate-limit binding for real traffic
@@ -98,6 +122,7 @@ const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, header
 async function check(req, env) {
   if (limited(req.headers.get('cf-connecting-ip') || 'x')) return json({ ok: false, error: 'rate_limited' }, 429);
   let body; try { body = await req.json(); } catch { return json({ ok: false, error: 'bad_json' }, 400); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ ok: false, error: 'bad_request' }, 400);
   const task = TASKS[body.kind];
   const imgs = Array.isArray(body.images) ? body.images : [];
   if (!task || imgs.length !== task.n || imgs.some(i => typeof i !== 'string' || i.length > 2_500_000 || !/^[A-Za-z0-9+/=]+$/.test(i)))
@@ -125,7 +150,7 @@ async function check(req, env) {
     const out = (j.content || []).find(c => c.type === 'tool_use');
     if (!out) return json({ ok: false, error: 'no_result' }, 502);
     // Images are not stored anywhere: they live only in this request's memory.
-    return json({ ok: true, kind: body.kind, model, result: validate(body.kind, out.input) });
+    return answer(body.kind, task, model, out.input);
   } catch (e) {
     return json({ ok: false, error: e.name === 'TimeoutError' ? 'timeout' : 'upstream' }, 504);
   }
@@ -149,7 +174,8 @@ async function viaOpenRouter(kind, task, content, env) {
     if (!r.ok) return env.AI ? viaWorkersAI(kind, task, parts, env) : json({ ok: false, error: 'model_error', detail: j?.error?.message?.slice(0, 120) || r.status }, 502);
     const call = j.choices?.[0]?.message?.tool_calls?.[0];
     if (!call) return json({ ok: false, error: 'no_result' }, 502);
-    return json({ ok: true, kind, model, result: validate(kind, JSON.parse(call.function.arguments)) });
+    let raw; try { raw = JSON.parse(call.function.arguments); } catch { return json({ ok: false, error: 'invalid_result', model }, 502); }
+    return answer(kind, task, model, raw);
   } catch (e) {
     if (env.AI) return viaWorkersAI(kind, task, parts, env);
     return json({ ok: false, error: e.name === 'TimeoutError' ? 'timeout' : 'upstream' }, 504);
@@ -167,19 +193,23 @@ async function viaWorkersAI(kind, task, parts, env) {
     });
     const res = typeof out?.response === 'string' ? JSON.parse(out.response.replace(/^[^{]*/, '').replace(/[^}]*$/, '')) : out?.response;
     if (!res || typeof res !== 'object') return json({ ok: false, error: 'no_result' }, 502);
-    return json({ ok: true, kind, model, result: validate(kind, res) });
+    return answer(kind, task, model, res);
   } catch (e) {
     return json({ ok: false, error: 'upstream', detail: String(e.message || e).slice(0, 120) }, 504);
   }
 }
 
 // One-time unlock key: the lock checks the HMAC with its own copy of the secret, so a copied or edited message fails.
+// Real keys must come from a server-side booking (planned: accounts + bookings, or TTLock's API). Until that exists the
+// public demo signs nothing; LOCK_BENCH=1 enables 15-minute keys for bench-testing the ESP32 lock prototype only.
 async function unlockKey(req, env) {
+  if (env.LOCK_BENCH !== '1' || !env.LOCK_SECRET) return json({ ok: false, error: 'demo_only' }, 403);
   let b; try { b = await req.json(); } catch { return json({ ok: false }, 400); }
+  if (!b || typeof b !== 'object') return json({ ok: false, error: 'bad_request' }, 400);
   const until = Number(b.until), now = Date.now();
-  if (!/^[a-z0-9]{1,12}$/.test(b.vehicle || '') || !(until > now && until < now + 5 * 3600e3)) return json({ ok: false, error: 'bad_request' }, 400);
+  if (!/^[a-z0-9]{1,12}$/.test(b.vehicle || '') || !(until > now && until <= now + 15 * 60e3)) return json({ ok: false, error: 'bad_request' }, 400);
   const msg = `UNLOCK|${b.vehicle}|${Math.floor(until / 1000)}`;
-  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.LOCK_SECRET || 'demo-secret'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.LOCK_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(x => x.toString(16).padStart(2, '0')).join('');
   return json({ ok: true, msg, sig });
 }

@@ -1,8 +1,8 @@
 :root{
   --cardinal:#990000; --cardinal-d:#6e0000; --cardinal-l:#c21a1a;
   --gold:#FFCC00; --gold-d:#e0b000;
-  --ink:#16110f; --ink2:#4a423e; --mute:#8a817c; --line:#ece6e2;
-  --bg:#f6f3f1; --card:#ffffff; --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+  --ink:#16110f; --ink2:#4a423e; --mute:#6b625d; --line:#ece6e2;
+  --bg:#f6f3f1; --card:#ffffff; --ok:#15803d; --warn:#b45309; --bad:#dc2626;
   --r:18px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -56,7 +56,7 @@ input,select{font:inherit}
 .top{padding:62px 20px 10px;display:flex;align-items:center;gap:10px}
 @media (max-width:520px){.top{padding-top:calc(16px + env(safe-area-inset-top))}}
 .top h2{margin:0;font-size:24px;letter-spacing:-.6px;font-weight:850;flex:1}
-.back{width:38px;height:38px;border-radius:12px;background:#fff;display:grid;place-items:center;box-shadow:0 1px 0 var(--line),0 2px 8px #0000000d;font-size:20px;flex:none}
+.back{width:44px;height:44px;border-radius:12px;background:#fff;display:grid;place-items:center;box-shadow:0 1px 0 var(--line),0 2px 8px #0000000d;font-size:20px;flex:none}
 .tabbar{display:flex;justify-content:space-around;background:#fffffff2;backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:8px 6px 30px}
 @media (max-width:520px){.tabbar{padding-bottom:calc(10px + env(safe-area-inset-bottom))}}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--mute);padding:4px 0}
@@ -254,3 +254,5 @@ input,select{font:inherit}
 .plug .w{font-size:24px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
 #map .leaflet-tile-pane{filter:saturate(.75) contrast(.95)}
 #mm .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6)}
+
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

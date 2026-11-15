@@ -1,6 +1,13 @@
-> **Update (Nov 14 2026):** charging is the owner's job (no charging stations) and the lock kit is a $48 TTLock padlock + chain with no tracker. See COSTS.md. Pricing is now set by each owner: a start price covering the first 2 hours and 2 miles (usually $5), then a price per extra hour and per extra mile (usually $2 each). Missing the owner's curfew costs $10, and a renter whose battery dies kicks it home without the motor. Older block prices and late fees below are replaced. The rest of this rulebook still applies.
+> **Current decisions (Nov 14 2026). These override anything below.**
+> - Name: **SCoot**. "TroyLoop" below is the old working name.
+> - Price: each owner sets a start price that covers the first 2 hours and 2 miles (usually $5), then a price for each started extra hour and each started extra mile (usually $2 each). No blocks, no 15-minute extensions, no per-15-minute late fees.
+> - Curfew: the owner's back-by time. Missing it costs a one-time $10. Reporting lock trouble, a crash or a dead phone stops extra-time and curfew fees.
+> - Dead battery: the renter kicks it home without the motor, or walks it if riding isn't safe. One report moves the curfew 30 minutes.
+> - Money: owner 70%; of SCoot's 30%, 15% pays off the owner's $86 lock kit and 15% covers card fees and the safety fund. After the kit is paid off, the owner keeps 85%.
+> - Lock kit: TTLock smart padlock ($48) + ABUS hardened chain ($38), no GPS tracker, no monthly fee. The renter's phone logs location at every unlock and lock. Owners charge their own scooters; there are no charging stations.
+> - See docs/COSTS.md for the current pilot budget.
 
-# TroyLoop Rulebook
+# SCoot Rulebook (written under the working name TroyLoop)
 
 **Final design proposal · November 14, 2026**  
 **Intended destination:** `G:\AIUSC\design\RULEBOOK.md`  
