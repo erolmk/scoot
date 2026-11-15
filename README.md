@@ -40,6 +40,8 @@ public/rideon/   the app (vanilla JS single-page app in a phone frame; Leaflet +
 worker.js        Cloudflare Worker: serves the app, /api/check (AI), /api/key (signed unlock keys)
 lock/            ESP32 smart-lock firmware (BLE, HMAC key check, latch switch)
 docs/RULEBOOK.md the full operating rulebook: every "when X happens" case, red-teamed
+docs/COSTS.md    lock kit ($168 per vehicle) and pilot cost
+docs/RideOn_deck.pdf  the pitch deck
 ```
 
 ## Run it
