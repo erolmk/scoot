@@ -9,12 +9,13 @@ Live prototype: **https://seamengine.com/scoot/** · Pitch deck: **https://seame
 - Scooters left on campus racks get stolen. USC DPS logged four e-scooters stolen from campus racks in one evening (Feb 5 2025), with cut cable locks left behind.
 - The ones that survive sit idle for hours while their owners are in class.
 - Students who only need a scooter now and then can't justify buying one, and Lime is a red zone on campus. So they walk.
+- We asked 20 USC students: 6 of 8 scooter owners would probably rent theirs out, and 9 of 12 students without one would probably use it (the other 3 don't make trips long enough to need it).
 
 ## The idea
-Owners get a smart lock on free loan. In return, their scooter or bike can be borrowed by other verified students while it would otherwise sit idle.
+Owners get a smart lock at no cost to them; part of SCoot's cut pays it off. In return, their scooter or bike can be borrowed by other verified students while it would otherwise sit idle.
 
 - **Round trip.** Pick it up at the owner's rack, bring it back to the same rack. No rebalancing problem.
-- **Owners set the price.** A start price covers the first 2 hours and 2 miles (the shortest rental), then a price per extra hour and per extra mile. Most owners use $5, $2 and $2: Parkside to the Village gym and back is $5, a 4-hour lecture is $11. Missing the owner's curfew costs $10. The owner keeps 70%; 30% covers card fees and a safety fund.
+- **Owners set the price.** A start price covers the first 2 hours and 2 miles (the shortest rental), then a price per extra hour and per extra mile. Most owners use $5, $2 and $2: Parkside to the Village gym and back is $5, a 4-hour lecture is $11. Missing the owner's curfew costs $10. The owner keeps 70%. Of SCoot's 30%, half pays off the owner's $86 lock kit and half covers card fees and a safety fund; once the lock is paid off, the owner keeps 85%.
 - **Battery estimate.** The AI reads the battery from a photo at pickup; during the ride the app subtracts the miles ridden times that scooter's drain per mile, and re-learns the drain from each ride's before and after photos. If it dies anyway, the renter kicks it home without the motor.
 - **Only Trojans.** USC NetID sign-in, plus a license check for e-scooters (CA Vehicle Code 21235).
 - **Cheap lock, no tracker.** A $48 TTLock smart padlock plus a $38 hardened chain. The renter's phone logs location at every unlock and lock (the ride log), so the lock needs no GPS and there's no monthly fee.
