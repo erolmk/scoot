@@ -1,5 +1,5 @@
-// RideOn smart-lock prototype (ESP32, Arduino core).
-// The phone writes "UNLOCK|<vehicle>|<expiry-unix>|<hex hmac>" received from the RideOn server.
+// SCoot smart-lock prototype (ESP32, Arduino core).
+// The phone writes "UNLOCK|<vehicle>|<expiry-unix>|<hex hmac>" received from the SCoot server.
 // The lock recomputes HMAC-SHA256 with its own copy of the secret, so a forged or edited key fails.
 // Hardware: ESP32 dev board, SG90 servo (or 5 V solenoid via MOSFET) on SERVO_PIN, latch switch on LATCH_PIN.
 #include <BLEDevice.h>
@@ -55,7 +55,7 @@ void setup() {
   pinMode(LATCH_PIN, INPUT_PULLUP);
   bolt.attach(SERVO_PIN);
   bolt.write(SHUT_DEG);
-  BLEDevice::init((String("RideOn-") + VEHICLE).c_str());
+  BLEDevice::init((String("SCoot-") + VEHICLE).c_str());
   BLEServer *srv = BLEDevice::createServer();
   BLEService *svc = srv->createService(SVC_UUID);
   chr = svc->createCharacteristic(CHR_UUID, BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
@@ -64,7 +64,7 @@ void setup() {
   svc->start();
   BLEDevice::getAdvertising()->addServiceUUID(SVC_UUID);
   BLEDevice::startAdvertising();
-  Serial.println("RideOn lock ready");
+  Serial.println("SCoot lock ready");
 }
 
 void loop() {

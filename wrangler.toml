@@ -3,6 +3,8 @@ main = "worker.js"
 compatibility_date = "2025-09-01"
 workers_dev = true
 routes = [
+  { pattern = "seamengine.com/scoot*", zone_name = "seamengine.com" },
+  { pattern = "www.seamengine.com/scoot*", zone_name = "seamengine.com" },
   { pattern = "seamengine.com/rideon*", zone_name = "seamengine.com" },
   { pattern = "www.seamengine.com/rideon*", zone_name = "seamengine.com" },
 ]

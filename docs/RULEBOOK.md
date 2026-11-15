@@ -1,3 +1,5 @@
+> **Update (Nov 14 2026):** charging is the owner's job (no charging stations) and the lock kit is a $48 TTLock padlock + chain with no tracker. See COSTS.md. The rest of this rulebook still applies.
+
 # TroyLoop Rulebook
 
 **Final design proposal · November 14, 2026**  
